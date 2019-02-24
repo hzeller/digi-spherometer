@@ -45,6 +45,10 @@ static constexpr uint8_t DATA_TRANSFER    = 0x40;
 static constexpr uint8_t SSD1306_I2C_ADDRESS = 0x78;
 
 SSD1306Display::SSD1306Display() {
+  Reset();
+}
+
+void SSD1306Display::Reset() {
   SetOn(false);
 
   // Init stuff.

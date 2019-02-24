@@ -149,7 +149,7 @@ static void SleepTillLevelChange() {
 }
 
 int main() {
-    _delay_ms(100);  // Let display warm up and get ready before the first i2c
+    _delay_ms(500);  // Let display warm up and get ready before the first i2c
     SSD1306Display display;
 
     char buffer[16];
@@ -168,7 +168,7 @@ int main() {
       if (off_cycles > kPowerOffAfterCycles) {
         display.SetOn(false);
         SleepTillLevelChange();
-        display.SetOn(true);
+        display.Reset();   // Might've slept a long time. Make sure OK.
       }
 
       if (last_dial_data.off != dial_data.off
@@ -181,7 +181,7 @@ int main() {
       if (dial_data.off) {
         if (!last_dial_data.off) {  // Only write to display the
           display.WriteString(&progmem_font_smalltext.meta, 0, 0,
-                              "©Henner Zeller");
+                              "© Henner Zeller");
           display.WriteString(&progmem_font_tinytext.meta, 0, 16,
                               "GNU Public License");
           display.WriteString(&progmem_font_tinytext.meta, 0, 32,
