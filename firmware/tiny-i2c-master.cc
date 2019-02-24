@@ -19,9 +19,11 @@
 
 #include <util/delay.h>
 
-// For use with _delay_us()
-#define T2_TWI    1 		// >4,7us
-#define T4_TWI    1 		// >4,0us
+// The delay _should_ be more, but looks like we can drive the SSD1306
+// a lot faster. Which is good (even a delay of 0 seems to work fine, but
+// let's not push it too far :)).
+static constexpr uint8_t DELAY_2TWI = 1;  // > 4.5μs
+static constexpr uint8_t DELAY_4TWI = 1;  // > 4μs
 
 I2CMaster::I2CMaster() {
   USI_PORT |= (1<<USI_PORT_SDA) | (1<<USI_PORT_SCL);  // pullups on.
@@ -52,10 +54,10 @@ void I2CMaster::StartTransmission(uint8_t address) {
   USI_PORT |= (1<<USI_PORT_SCL);           // SCL up ...
   while (!(USI_PIN & (1<<USI_PORT_SCL)))  // ... wait until it actually is.
     ;
-  _delay_us(T4_TWI);  // fast mode.
+  _delay_us(DELAY_4TWI);  // fast mode.
 
   USI_PORT &= ~(1<<USI_PORT_SDA);  // Pull SDA low
-  _delay_us(T4_TWI);
+  _delay_us(DELAY_4TWI);
   USI_PORT &= ~(1<<USI_PORT_SCL);  // Pull SCL low
   USI_PORT |= (1<<USI_PORT_SDA);   // SDA up again.
 
@@ -67,10 +69,10 @@ void I2CMaster::FinishTransmission() {
   USI_PORT |= (1<<USI_PORT_SCL);           // SCL up ...
   while (!(USI_PIN & (1<<USI_PORT_SCL)))  // ... wait until it actually is.
     ;
-  _delay_us(T4_TWI);
+  _delay_us(DELAY_4TWI);
 
   USI_PORT |= (1<<USI_PORT_SDA);   // SDA up
-  _delay_us(T2_TWI);
+  _delay_us(DELAY_2TWI);
 }
 
 void I2CMaster::Write(uint8_t b) {
@@ -98,15 +100,15 @@ uint8_t I2CMaster::Transfer(uint8_t mode, uint8_t b) {
     | (1 << USITC);                                   // clock toggle.
 
   do {
-    _delay_us(T2_TWI);
+    _delay_us(DELAY_2TWI);
     USICR = clk_icr;   // Toggle SCL up.
     while (!(USI_PIN & (1<<USI_PORT_SCL)))  // wait until SCL is high.
       ;
-    _delay_us(T4_TWI);
+    _delay_us(DELAY_4TWI);
     USICR = clk_icr;   // Toggle SCL down.
   } while (!(USISR & (1<<USIOIF)));   // Until all bits are out.
 
-  _delay_us(T2_TWI);
+  _delay_us(DELAY_2TWI);
   const uint8_t received = USIDR;
   USIDR = 0xFF; // release SDA
   USI_DDR |= (1 << USI_PORT_SDA); // .. back to SDA as output.

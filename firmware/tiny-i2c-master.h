@@ -32,7 +32,7 @@ public:
 
   void Enable(bool b);
   void StartTransmission(uint8_t address);
-  void Write(uint8_t b);  // Send a byte, receive a byte.
+  void Write(uint8_t b);
   void FinishTransmission();
 
 private:
