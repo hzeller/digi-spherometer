@@ -14,30 +14,19 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-#ifndef SSD1306_FONT_SUPPORT_
-#define SSD1306_FONT_SUPPORT_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef STRFMT_H
+#define STRFMT_H
 
 #include <stdint.h>
 
-struct MetaGlyph {
-    int16_t codepoint;     // Unicode 16 code-point.
-    int8_t width;          // Individual width of this one.
-} __attribute__((packed));
-
-struct MetaFont {
-    uint16_t available_glyphs; // Number of glyphs in this font.
-    uint8_t pages;             // height in 'pages', essentially 8 bit stripes
-    uint8_t font_width;        // Widest glyph in this font. Determines bytes.
-    uint8_t glyph_data_size;   // Glyph size (sizeof(ProgmemGlyph<W,H>))
-} __attribute__((packed));
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // SSD1306_FONT_SUPPORT_
+// Utility function to print fixed point numbers.
+// Format number "number". If "decimals" is given, a decimal point
+// is placed in front of these many digits from the right.
+// The string is padded with spaces at the front to satisfy "total_len".
+//
+// Returns pointer to NUL-terminated string. Uses passed in "buffer" to
+// store string (but note, the return value is not necessarly pointing
+// at the beginning of the buffer).
+const char *strfmt(char *buffer, uint8_t buflen, int32_t number,
+                   int8_t decimals, int8_t total_len = -1);
+#endif // STRFMT_H

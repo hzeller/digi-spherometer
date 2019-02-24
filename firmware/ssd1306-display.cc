@@ -1,4 +1,5 @@
 // -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
+//
 // Copyright (C) 2018 Henner Zeller <h.zeller@acm.org>
 //
 // This program is free software: you can redistribute it and/or modify
@@ -149,18 +150,18 @@ uint8_t SSD1306Display::WriteString(const MetaFont *progmem_font,
                                     uint8_t xpos, uint8_t ypos,
                                     const char *utf8_text) {
   uint8_t ypage = ypos / 8;  // TODO: maybe do some shifting for in-between
-  MetaFont unpacked_meta;
-  memcpy_P(&unpacked_meta, progmem_font, sizeof(unpacked_meta));
+  MetaFont unpacked_font;
+  memcpy_P(&unpacked_font, progmem_font, sizeof(unpacked_font));
   while (*utf8_text) {
     const uint32_t cp = utf8_next_codepoint(utf8_text);
-    const MetaGlyph *progmem_glyph = FindProgmemGlyph(cp, unpacked_meta,
+    const MetaGlyph *progmem_glyph = FindProgmemGlyph(cp, unpacked_font,
                                                       progmem_font);
     if (progmem_glyph == nullptr) continue;
     MetaGlyph unpacked_glyph;
     memcpy_P(&unpacked_glyph, progmem_glyph, sizeof(unpacked_glyph));
-    for (uint8_t y = 0; y < unpacked_meta.pages; ++y) {
+    for (uint8_t y = 0; y < unpacked_font.pages; ++y) {
       const uint8_t *data = ((const uint8_t*)(progmem_glyph) + sizeof(MetaGlyph)
-                             + y * unpacked_meta.font_width);
+                             + y * unpacked_font.font_width);
       DrawPageFromProgmem(ypage + y, xpos, xpos + unpacked_glyph.width, data);
     }
     xpos += unpacked_glyph.width;

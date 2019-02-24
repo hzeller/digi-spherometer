@@ -1,6 +1,6 @@
 // -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
 //
-// Copyright (C) 2018 Henner Zeller <h.zeller@acm.org>
+// Copyright (C) 2019 Henner Zeller <h.zeller@acm.org>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

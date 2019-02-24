@@ -1,9 +1,11 @@
 // -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
+//
 // Copyright (C) 2019 Henner Zeller <h.zeller@acm.org>
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation version 2.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,25 +13,31 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://gnu.org/licenses/gpl-2.0.txt>
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#include <avr/interrupt.h>
+#include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/power.h>
+#include <avr/sleep.h>
 #include <avr/sleep.h>
 #include <stdint.h>
 #include <util/delay.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <avr/power.h>
 
 #include "ssd1306-display.h"
+#include "strfmt.h"
 
+// Compiled-in fonts we're using for the UI.
 #include "font-bignumber.h"
 #include "font-smalltext.h"
 #include "font-tinytext.h"
 
+// Distance center to feet. Radius of the Spherometer-feet circle.
 constexpr float d_mm = 50.0f;
 
+// TODO: also take radius of balls used as feet into account.
+
+// ... derived from the above; let's compile-time calculate them.
 constexpr float d_inch = d_mm / 25.4f;
 constexpr float d_mm_squared = d_mm * d_mm;
 constexpr float d_inch_squared = d_inch * d_inch;
@@ -41,23 +49,29 @@ static float calc_r_inch(float sag) {
     return (d_inch_squared + sag*sag) / (2*sag);
 }
 
+// Pins the dial indicator is connected to.
 static constexpr uint8_t CLK_BIT  = (1<<4);
 static constexpr uint8_t DATA_BIT = (1<<3);
 
 struct DialData {
-  int32_t value : 20;    // 20 bits of raw count data
-  uint8_t negative : 1;  // negative if one.
-  uint8_t off : 1;       // Not directly from
+  int32_t value : 20;      // 20 bits of raw count data
+  uint8_t negative : 1;    // if true, value avoe is a negative number.
+  uint8_t off : 1;         // dial indicator off, couldn't read data.
   uint8_t dummy : 1;
-  uint8_t is_imperial : 1;
+  uint8_t is_imperial : 1;  // Reading is in imperial units
 };
 
-// Read the dial indicator. This is clocked out LSB.
+// Read the dial indicator (my model: AUTOLET digital indicator with 1μm res).
+//
+// Data is clocked out LSB first. Data is read on rising edge of CLK.
 // We get 24 bits, 20 of which are the read count (or number*2 for imperial,
 // as they count the last half digit) and a negate and is_imperial bit.
-// We also fill one 'off detection' bit: when we see that the dial is off.
-// Since we're level converting the inputs with a transistor, the signals
-// are inverted.
+// We also fill one 'off detection' bit: when we see that the dial is not
+// clocking, so we can consider it OFF (otherwise we'd wait forever here).
+//
+// Since we're level converting the inputs from 1.5V to VCC with a transistor,
+// the signals are inverted, i.e. we're looking at the _falling_ edge of
+// CLK and invert the bit we read.
 static DialData readDialIndicator() {
   constexpr uint16_t kInitialWaitTime = 5000;
   constexpr uint16_t kOffDetectionCount = 15000;
@@ -104,37 +118,14 @@ static DialData readDialIndicator() {
   return result.data;
 }
 
-const char *strfmt(char *buffer, uint8_t buflen, int32_t v,
-                   int8_t decimals, int8_t total_len = -1) {
-    const bool is_neg = (v < 0);
-    if (is_neg) v = -v;
-    buffer = buffer + buflen - 1;
-    *buffer-- = '\0';
-    const char *pad_to = (total_len > 0) ? (buffer - total_len) : buffer;
-    bool is_first = true;  // properly print and decimal-handling zero value.
-    while (is_first || v > 0) {
-        *buffer-- = (v % 10) + '0';
-        v /= 10;
-        if (--decimals == 0)
-            *buffer-- = '.';
-        is_first = false;
-    }
-    if (decimals > 0) {
-        while (decimals-- > 0)
-            *buffer-- = '0';
-        *buffer-- = '.';
-    }
-    if (is_neg) *buffer-- = '-';
-    while (pad_to < buffer)
-        *buffer-- = ' ';
-    return buffer + 1;
-}
-
+// Get microcontroller to deep sleep. We enable a level changing interrupt
+// to come back online. We are listening on the clock line of the dial
+// indicator for that. That way, we don't need any button.
 EMPTY_INTERRUPT(PCINT0_vect);
-static void SleepTillLevelChange() {
+static void SleepTillDialIndicatorClocksAgain() {
   cli();
   GIMSK |= (1<<PCIE);   // level change interrupt
-  PCMSK = CLK_BIT;       // Switch on for PB4, which is the indicator clock.
+  PCMSK = CLK_BIT;      // Switch on level detection on the CLK of indicator
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 
   sleep_enable();
@@ -160,6 +151,10 @@ int main() {
     for (;;) {
       DialData dial_data = readDialIndicator();
 
+      // If the dial indicator is off, we watch this for a while. After
+      // kPowerOffAfterCycles, we go to deep sleep. In the time between
+      // we detect the indicator to be off and going to sleep, we show the
+      // github message on the display for people to find.
       if (dial_data.off)
         off_cycles++;
       else
@@ -167,7 +162,7 @@ int main() {
 
       if (off_cycles > kPowerOffAfterCycles) {
         display.SetOn(false);
-        SleepTillLevelChange();
+        SleepTillDialIndicatorClocksAgain();
         display.Reset();   // Might've slept a long time. Make sure OK.
       }
 
@@ -179,7 +174,7 @@ int main() {
       }
 
       if (dial_data.off) {
-        if (!last_dial_data.off) {  // Only write to display the
+        if (!last_dial_data.off) {  // Only need to write if we just got here.
           display.WriteString(&progmem_font_smalltext.meta, 0, 0,
                               "© Henner Zeller");
           display.WriteString(&progmem_font_tinytext.meta, 0, 16,
@@ -204,47 +199,51 @@ int main() {
       }
       else if (dial_data.value == last_dial_data.value
                && dial_data.is_imperial == last_dial_data.is_imperial) {
-        // Nothing changed. No need to update display.
+        // Value or unit did not change. No need to update display.
       }
       else {
-        int32_t value = dial_data.value;
-        if (dial_data.is_imperial) value *= 5;
+        int32_t value = dial_data.value;         // micrometer units
+        if (dial_data.is_imperial) value *= 5;   // 0.00001" units.
 
-        // Print read value
+        // Print sag value we got from the dial indicator
         x = display.WriteString(&progmem_font_smalltext.meta, 0, 0, "sag=");
         x = display.WriteString(&progmem_font_smalltext.meta, x, 0,
-                                strfmt(buffer, sizeof(buffer),
-                                       value,
+                                strfmt(buffer, sizeof(buffer), value,
                                        dial_data.is_imperial ? 5 : 3, 7));
         display.WriteString(&progmem_font_smalltext.meta, x, 0,
                             dial_data.is_imperial ? "\"  " : "mm");
 
-        display.WriteString(&progmem_font_smalltext.meta, 0, 40, "r");
+        // Make sure that it is clear we're talking about the sphere radius
+        display.WriteString(&progmem_font_smalltext.meta, 0, 40, "r=");
+
+        // Calculating the sag values to radius in their respective units.
+        // We truncate the returned value to an integer, which is the type
+        // we can properly string format below.
         float sag = dial_data.is_imperial ? value / 100000.0f : value / 1000.0f;
+        int32_t radius = dial_data.is_imperial
+          ? 10 * calc_r_inch(sag)   // Fixpoint shift to display 1/10" unit
+          : calc_r_mm(sag);
+
+        // If the value is too large, we don't want to overflow the display.
+        // Instead, we clamp it to highest value and show a little > indicator.
+        if (radius > 9999) {   // Limit digits to screen-size
+          display.WriteString(&progmem_font_smalltext.meta, 0, 24, ">");
+          radius = 9999;
+        } else {
+          display.WriteString(&progmem_font_smalltext.meta, 0, 24, " ");
+        }
+
+        // Different formatting of numbers in different units, including suffix
         if (dial_data.is_imperial) {
-          int32_t radius = 10 * calc_r_inch(sag);
-          if (radius > 9999) {   // Limit digits to screen-size
-            display.WriteString(&progmem_font_smalltext.meta, 0, 16, ">");
-            radius = 9999;
-          } else {
-            display.WriteString(&progmem_font_smalltext.meta, 0, 16, " ");
-          }
-          x = display.WriteString(
-            &progmem_font_bignumber.meta, 12, 16,
-            strfmt(buffer, sizeof(buffer), radius, 1, 5));
+          // One decimal point, total of 5 characters (including point) 999.9
+          const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
+          x = display.WriteString(&progmem_font_bignumber.meta, 15, 24, str);
           display.WriteString(&progmem_font_bignumber.meta, x, 16, "\"");
         }
         else {
-          int32_t radius = calc_r_mm(sag);
-          if (radius > 9999) { // Limit digits to screen-size
-            display.WriteString(&progmem_font_smalltext.meta, 0, 16, ">");
-            radius = 9999;
-          } else {
-            display.WriteString(&progmem_font_smalltext.meta, 0, 16, " ");
-          }
-          x = display.WriteString(
-            &progmem_font_bignumber.meta, 12, 16,
-            strfmt(buffer, sizeof(buffer), radius, 0, 4));
+          // No decimal point, total of 4 characters: 9999
+          const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
+          x = display.WriteString(&progmem_font_bignumber.meta, 15, 24, str);
           display.WriteString(&progmem_font_smalltext.meta, x, 40, "mm");
         }
       }
