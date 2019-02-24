@@ -11,7 +11,7 @@ AVRDUDE     = avrdude -p t85 -c stk500v2 -P $(AVRDUDE_DEVICE)
 FLASH_CMD   = $(AVRDUDE) -e -U flash:w:main.hex
 LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections
 OBJECTS=main.o ssd1306-display.o tiny-i2c-master.o \
-        font-bignumber.o font-smalltext.o
+        font-bignumber.o font-smalltext.o font-tinytext.o
 
 all : main.hex
 
