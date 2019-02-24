@@ -6,10 +6,20 @@
 // We're linking this in a pure C compilation unit as C++ as of now officially
 // does not support readability-improving designated initializers. Sigh.
 const struct ProgmemFont_bignumber_t PROGMEM progmem_font_bignumber = {
-  .meta = { .available_glyphs = 11, .pages = 5, .font_width = 22,
+  .meta = { .available_glyphs = 13, .pages = 5, .font_width = 22,
             .glyph_data_size = 113 },
   .glyphs = {
-    {
+        {
+      .meta = {.codepoint = ' ', .width=22},
+      .data = {},
+    },{
+      .meta = {.codepoint = '-', .width=22},
+      .data = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+               {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+               {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80},
+               {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+               {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
+    },{
       .meta = {.codepoint = '.', .width=7},
       .data = {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
                {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},

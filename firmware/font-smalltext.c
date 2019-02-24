@@ -6,7 +6,7 @@
 // We're linking this in a pure C compilation unit as C++ as of now officially
 // does not support readability-improving designated initializers. Sigh.
 const struct ProgmemFont_smalltext_t PROGMEM progmem_font_smalltext = {
-  .meta = { .available_glyphs = 24, .pages = 2, .font_width = 8,
+  .meta = { .available_glyphs = 25, .pages = 2, .font_width = 8,
             .glyph_data_size = 19 },
   .glyphs = {
     {
@@ -16,6 +16,10 @@ const struct ProgmemFont_smalltext_t PROGMEM progmem_font_smalltext = {
     },{
       .meta = {.codepoint = '"', .width=7},
       .data = {{0x00, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x0f},
+               {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
+    },{
+      .meta = {.codepoint = '-', .width=7},
+      .data = {{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00},
                {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
     },{
       .meta = {.codepoint = '.', .width=6},

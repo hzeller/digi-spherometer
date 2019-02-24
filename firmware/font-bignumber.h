@@ -11,7 +11,7 @@ struct ProgmemFont_bignumber_t {
   struct {
     struct MetaGlyph meta;
     uint8_t data[5][22];  // page-stripes, width
-  } glyphs[11];
+  } glyphs[13];
 } __attribute__((packed));
 
 extern const struct ProgmemFont_bignumber_t PROGMEM progmem_font_bignumber;
