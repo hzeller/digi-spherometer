@@ -11,7 +11,7 @@ struct ProgmemFont_tinytext_t {
   struct {
     struct MetaGlyph meta;
     uint8_t data[2][7];  // page-stripes, width
-  } glyphs[27];
+  } glyphs[26];
 } __attribute__((packed));
 
 extern const struct ProgmemFont_tinytext_t PROGMEM progmem_font_tinytext;
