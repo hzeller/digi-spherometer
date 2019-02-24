@@ -22,10 +22,6 @@
 
 #include "utf8-iterator.h"
 
-// binary search (compared to linear search) can be faster with fonts with
-// more than a handful of glyphs, but also uses ~80 bytes more memory.
-#define USE_BINARY_SEARCH_CODEPOINT_FINDING 1
-
 static constexpr uint8_t REG_CONTRAST        = 0x81;
 static constexpr uint8_t REG_ENTIRE_ON       = 0xa4;
 static constexpr uint8_t REG_NORM_INV        = 0xa6;
@@ -76,6 +72,8 @@ SSD1306Display::SSD1306Display() {
     i2c_.Write(pgm_read_byte(&init_sequence[i]));
   }
   i2c_.FinishTransmission();
+
+  ClearScreen();
   SetOn(true);
 }
 
@@ -129,31 +127,19 @@ void SSD1306Display::DrawPageFromProgmem(uint8_t page,
   i2c_.FinishTransmission();
 }
 
-#if USE_BINARY_SEARCH_CODEPOINT_FINDING
 static int compare(const void *key, const void *element) {
   int codepoint = pgm_read_word(element);
   int search_codepoint = *static_cast<const uint16_t*>(key);
   return search_codepoint - codepoint;
 }
-#endif
 
 static const MetaGlyph* FindProgmemGlyph(uint16_t codepoint,
                                          const MetaFont &meta,
                                          const MetaFont *progmem_font) {
   const uint8_t *glyph_data = (const uint8_t*)progmem_font + sizeof(MetaFont);
-#if USE_BINARY_SEARCH_CODEPOINT_FINDING
   return static_cast<const MetaGlyph*>(
     bsearch(&codepoint, glyph_data, meta.available_glyphs, meta.glyph_data_size,
             compare));
-#else
-  for (uint8_t i = 0; i < meta.available_glyphs; ++i) {
-    if (pgm_read_word(glyph_data) == codepoint) {
-      return (const MetaGlyph*)glyph_data;
-    }
-    glyph_data += meta.glyph_data_size;
-  }
-  return nullptr;
-#endif
 }
 
 uint8_t SSD1306Display::WriteString(const MetaFont *progmem_font,
