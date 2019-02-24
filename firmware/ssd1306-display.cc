@@ -86,6 +86,25 @@ void SSD1306Display::SetOn(bool on) {
   i2c_.FinishTransmission();
 }
 
+void SSD1306Display::ClearScreen() {
+  const uint8_t cmd[] = {
+    REG_COL_ADDR, 0, 127,
+    REG_PAGE_ADDR, 0, 0xff,
+  };
+
+  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
+  i2c_.Write(COMMAND_TRANSFER);
+  for (uint8_t i = 0; i < sizeof(cmd); ++i)
+    i2c_.Write(cmd[i]);
+  i2c_.FinishTransmission();
+
+  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
+  i2c_.Write(DATA_TRANSFER);
+  for (uint16_t i = 0; i < 128 * 8; ++i)
+    i2c_.Write(0x00);
+  i2c_.FinishTransmission();
+}
+
 void SSD1306Display::DrawPageFromProgmem(uint8_t page,
                                          uint8_t from_x, uint8_t to_x,
                                          const uint8_t *progmem_buffer) {

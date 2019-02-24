@@ -31,6 +31,8 @@ class SSD1306Display {
 public:
   SSD1306Display();
 
+  void ClearScreen();
+
   // Switch display light on/off
   void SetOn(bool on);
 
