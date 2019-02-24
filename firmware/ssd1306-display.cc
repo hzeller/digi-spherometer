@@ -1,5 +1,4 @@
 // -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
-// This is txtempus, a LF time signal transmitter.
 // Copyright (C) 2018 Henner Zeller <h.zeller@acm.org>
 //
 // This program is free software: you can redistribute it and/or modify
