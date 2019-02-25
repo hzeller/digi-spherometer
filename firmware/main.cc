@@ -31,6 +31,7 @@
 #include "font-bignumber.h"
 #include "font-smalltext.h"
 #include "font-tinytext.h"
+#include "font-okfont.h"
 
 // Distance center to feet. Radius of the Spherometer-feet circle.
 constexpr float d_mm = 50.0f;
@@ -189,7 +190,7 @@ int main() {
         display.WriteString(&progmem_font_smalltext.meta, 48, 0,
                             "flat");
         display.WriteString(
-          &progmem_font_bignumber.meta, 34, 16, "OK");
+          &progmem_font_okfont.meta, 34, 16, "OK");
       }
       else if (!dial_data.negative) {
         display.WriteString(&progmem_font_smalltext.meta, 0, 8,
