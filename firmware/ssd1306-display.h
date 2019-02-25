@@ -63,8 +63,8 @@ public:
   // (Fonts are allowed to only contain characters that are needed in the
   //  application, so they can sparsely populated. The glyphs are expected to
   //  be sorted by codepoint)
-  uint8_t WriteString(const MetaFont *progmem_font,
-                   uint8_t xpos, uint8_t ypos, const char *utf8_text);
+  uint8_t Print(const MetaFont *progmem_font,
+                uint8_t xpos, uint8_t ypos, const char *utf8_text);
 
 private:
   I2CMaster i2c_;

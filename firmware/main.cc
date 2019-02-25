@@ -142,7 +142,7 @@ static void SleepTillDialIndicatorClocksAgain() {
 
 int main() {
     _delay_ms(500);  // Let display warm up and get ready before the first i2c
-    SSD1306Display display;
+    SSD1306Display disp;
 
     char buffer[16];
     uint8_t x;
@@ -162,41 +162,33 @@ int main() {
         off_cycles = 0;
 
       if (off_cycles > kPowerOffAfterCycles) {
-        display.SetOn(false);
+        disp.SetOn(false);
         SleepTillDialIndicatorClocksAgain();
-        display.Reset();   // Might've slept a long time. Make sure OK.
+        disp.Reset();   // Might've slept a long time. Make sure OK.
       }
 
       if (last_dial_data.off != dial_data.off
           || last_dial_data.negative != dial_data.negative
           || last_dial_data.is_imperial != dial_data.is_imperial
           || (last_dial_data.value == 0) != (dial_data.value == 0)) {
-        display.ClearScreen();  // Visuals will change. Clean-slatify.
+        disp.ClearScreen();  // Visuals will change. Clean-slatify.
       }
 
       if (dial_data.off) {
         if (!last_dial_data.off) {  // Only need to write if we just got here.
-          display.WriteString(&progmem_font_smalltext.meta, 0, 0,
-                              "© Henner Zeller");
-          display.WriteString(&progmem_font_tinytext.meta, 0, 16,
-                              "GNU Public License");
-          display.WriteString(&progmem_font_tinytext.meta, 0, 32,
-                              "github.com/hzeller/");
-          display.WriteString(&progmem_font_tinytext.meta, 0, 48,
-                              "digi-spherometer");
+          disp.Print(&progmem_font_smalltext.meta, 0, 0, "© Henner Zeller");
+          disp.Print(&progmem_font_tinytext.meta, 0, 16, "GNU Public License");
+          disp.Print(&progmem_font_tinytext.meta, 0, 32, "github.com/hzeller/");
+          disp.Print(&progmem_font_tinytext.meta, 0, 48, "digi-spherometer");
         }
       }
       else if (dial_data.value == 0) {
-        display.WriteString(&progmem_font_smalltext.meta, 48, 0,
-                            "flat");
-        display.WriteString(
-          &progmem_font_okfont.meta, 34, 16, "OK");
+        disp.Print(&progmem_font_smalltext.meta, 48, 0, "flat");
+        disp.Print(&progmem_font_okfont.meta, 34, 16, "OK");
       }
       else if (!dial_data.negative) {
-        display.WriteString(&progmem_font_smalltext.meta, 0, 8,
-                            "Please zero on");
-        display.WriteString(&progmem_font_smalltext.meta, 8, 32,
-                            "flat surface");
+        disp.Print(&progmem_font_smalltext.meta, 0, 8, "Please zero on");
+        disp.Print(&progmem_font_smalltext.meta, 8, 32, "flat surface");
       }
       else if (dial_data.value == last_dial_data.value
                && dial_data.is_imperial == last_dial_data.is_imperial) {
@@ -207,15 +199,15 @@ int main() {
         if (dial_data.is_imperial) value *= 5;   // 0.00001" units.
 
         // Print sag value we got from the dial indicator
-        x = display.WriteString(&progmem_font_smalltext.meta, 0, 0, "sag=");
-        x = display.WriteString(&progmem_font_smalltext.meta, x, 0,
-                                strfmt(buffer, sizeof(buffer), value,
-                                       dial_data.is_imperial ? 5 : 3, 7));
-        display.WriteString(&progmem_font_smalltext.meta, x, 0,
-                            dial_data.is_imperial ? "\"  " : "mm");
+        x = disp.Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
+        x = disp.Print(&progmem_font_smalltext.meta, x, 0,
+                       strfmt(buffer, sizeof(buffer), value,
+                              dial_data.is_imperial ? 5 : 3, 7));
+        disp.Print(&progmem_font_smalltext.meta, x, 0,
+                   dial_data.is_imperial ? "\"  " : "mm");
 
         // Make sure that it is clear we're talking about the sphere radius
-        display.WriteString(&progmem_font_smalltext.meta, 0, 40, "r=");
+        disp.Print(&progmem_font_smalltext.meta, 0, 40, "r=");
 
         // Calculating the sag values to radius in their respective units.
         // We truncate the returned value to an integer, which is the type
@@ -228,24 +220,24 @@ int main() {
         // If the value is too large, we don't want to overflow the display.
         // Instead, we clamp it to highest value and show a little > indicator.
         if (radius > 9999) {   // Limit digits to screen-size
-          display.WriteString(&progmem_font_smalltext.meta, 0, 24, ">");
+          disp.Print(&progmem_font_smalltext.meta, 0, 24, ">");
           radius = 9999;
         } else {
-          display.WriteString(&progmem_font_smalltext.meta, 0, 24, " ");
+          disp.Print(&progmem_font_smalltext.meta, 0, 24, " ");
         }
 
         // Different formatting of numbers in different units, including suffix
         if (dial_data.is_imperial) {
           // One decimal point, total of 5 characters (including point) 999.9
           const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
-          x = display.WriteString(&progmem_font_bignumber.meta, 15, 24, str);
-          display.WriteString(&progmem_font_bignumber.meta, x, 16, "\"");
+          x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
+          disp.Print(&progmem_font_bignumber.meta, x, 16, "\"");
         }
         else {
           // No decimal point, total of 4 characters: 9999
           const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
-          x = display.WriteString(&progmem_font_bignumber.meta, 15, 24, str);
-          display.WriteString(&progmem_font_smalltext.meta, x, 40, "mm");
+          x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
+          disp.Print(&progmem_font_smalltext.meta, x, 40, "mm");
         }
       }
       last_dial_data = dial_data;

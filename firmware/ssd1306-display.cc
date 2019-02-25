@@ -146,9 +146,9 @@ static const MetaGlyph* FindProgmemGlyph(uint16_t codepoint,
             compare));
 }
 
-uint8_t SSD1306Display::WriteString(const MetaFont *progmem_font,
-                                    uint8_t xpos, uint8_t ypos,
-                                    const char *utf8_text) {
+uint8_t SSD1306Display::Print(const MetaFont *progmem_font,
+                              uint8_t xpos, uint8_t ypos,
+                              const char *utf8_text) {
   uint8_t ypage = ypos / 8;  // TODO: maybe do some shifting for in-between
   MetaFont unpacked_font;
   memcpy_P(&unpacked_font, progmem_font, sizeof(unpacked_font));
