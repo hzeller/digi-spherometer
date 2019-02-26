@@ -55,11 +55,10 @@ constexpr float d_inch = d_mm / 25.4f;
 constexpr float d_mm_squared = d_mm * d_mm;
 constexpr float d_inch_squared = d_inch * d_inch;
 
-static float calc_r_mm(float sag) {
-    return (d_mm_squared + sag*sag) / (2*sag);
-}
-static float calc_r_inch(float sag) {
-    return (d_inch_squared + sag*sag) / (2*sag);
+static float calc_r(bool is_imperial, float sag) {
+  return is_imperial
+    ? ((d_inch_squared + sag*sag) / (2*sag))
+    : ((d_mm_squared + sag*sag) / (2*sag));
 }
 
 // Get microcontroller to deep sleep. We enable a level changing interrupt
@@ -84,106 +83,104 @@ static void SleepTillDialIndicatorClocksAgain() {
 }
 
 int main() {
-    _delay_ms(500);  // Let display warm up and get ready before the first i2c
-    SSD1306Display disp;
+  _delay_ms(500);  // Let display warm up and get ready before the first i2c
+  SSD1306Display disp;
 
-    char buffer[16];
-    uint8_t x;
-    DialData last_dial_data;
-    uint32_t off_cycles = 0;
-    constexpr uint32_t kPowerOffAfterCycles = 150;
-    for (;;) {
-      DialData dial_data = ReadDialIndicator(CLK_BIT, DATA_BIT);
+  char buffer[16];
+  uint8_t x;
+  DialData last_dial;
+  uint32_t off_cycles = 0;
+  constexpr uint32_t kPowerOffAfterCycles = 150;
+  for (;;) {
+    DialData dial = ReadDialIndicator(CLK_BIT, DATA_BIT);
 
-      // If the dial indicator is off, we watch this for a while. After
-      // kPowerOffAfterCycles, we go to deep sleep. In the time between
-      // we detect the indicator to be off and going to sleep, we show the
-      // github message on the display for people to find.
-      if (dial_data.off)
-        off_cycles++;
-      else
-        off_cycles = 0;
+    // If the dial indicator is off, we watch this for a while. After
+    // kPowerOffAfterCycles, we go to deep sleep. In the time between
+    // we detect the indicator to be off and going to sleep, we show the
+    // github message on the display for people to find.
+    if (dial.off)
+      off_cycles++;
+    else
+      off_cycles = 0;
 
-      if (off_cycles > kPowerOffAfterCycles) {
-        disp.SetOn(false);
-        SleepTillDialIndicatorClocksAgain();
-        disp.Reset();   // Might've slept a long time. Make sure OK.
-      }
-
-      if (last_dial_data.off != dial_data.off
-          || last_dial_data.negative != dial_data.negative
-          || last_dial_data.is_imperial != dial_data.is_imperial
-          || (last_dial_data.value == 0) != (dial_data.value == 0)) {
-        disp.ClearScreen();  // Visuals will change. Clean-slatify.
-      }
-
-      if (dial_data.off) {
-        if (!last_dial_data.off) {  // Only need to write if we just got here.
-          disp.Print(&progmem_font_smalltext.meta, 0, 0, "© Henner Zeller");
-          disp.Print(&progmem_font_tinytext.meta, 0, 16, "GNU Public License");
-          disp.Print(&progmem_font_tinytext.meta, 0, 32, "github.com/hzeller/");
-          disp.Print(&progmem_font_tinytext.meta, 0, 48, "digi-spherometer");
-        }
-      }
-      else if (dial_data.value == 0) {
-        disp.Print(&progmem_font_smalltext.meta, 48, 0, "flat");
-        disp.Print(&progmem_font_okfont.meta, 34, 16, "OK");
-      }
-      else if (!dial_data.negative) {
-        disp.Print(&progmem_font_smalltext.meta, 0, 8, "Please zero on");
-        disp.Print(&progmem_font_smalltext.meta, 8, 32, "flat surface");
-      }
-      else if (dial_data.value == last_dial_data.value
-               && dial_data.is_imperial == last_dial_data.is_imperial) {
-        // Value or unit did not change. No need to update display.
-      }
-      else {
-        int32_t value = dial_data.value;         // micrometer units
-        if (dial_data.is_imperial) value *= 5;   // 0.00001" units.
-
-        // Print sag value we got from the dial indicator
-        x = disp.Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
-        x = disp.Print(&progmem_font_smalltext.meta, x, 0,
-                       strfmt(buffer, sizeof(buffer), value,
-                              dial_data.is_imperial ? 5 : 3, 7));
-        disp.Print(&progmem_font_smalltext.meta, x, 0,
-                   dial_data.is_imperial ? "\"  " : "mm");
-
-        // Make sure that it is clear we're talking about the sphere radius
-        disp.Print(&progmem_font_smalltext.meta, 0, 40, "r=");
-
-        // Calculating the sag values to radius in their respective units.
-        // We roundthe returned value to an integer, which is the type
-        // we can properly string format below.
-        float sag = dial_data.is_imperial ? value / 100000.0f : value / 1000.0f;
-        // Fixpoint shift to display 1/10" unit
-        int32_t radius = roundf(dial_data.is_imperial
-                                ? 10 * calc_r_inch(sag)
-                                : calc_r_mm(sag));
-
-        // If the value is too large, we don't want to overflow the display.
-        // Instead, we clamp it to highest value and show a little > indicator.
-        if (radius > 9999) {   // Limit digits to screen-size
-          disp.Print(&progmem_font_smalltext.meta, 0, 24, ">");
-          radius = 9999;
-        } else {
-          disp.Print(&progmem_font_smalltext.meta, 0, 24, " ");
-        }
-
-        // Different formatting of numbers in different units, including suffix
-        if (dial_data.is_imperial) {
-          // One decimal point, total of 5 characters (including point) 999.9
-          const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
-          x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
-          disp.Print(&progmem_font_bignumber.meta, x, 16, "\"");
-        }
-        else {
-          // No decimal point, total of 4 characters: 9999
-          const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
-          x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
-          disp.Print(&progmem_font_smalltext.meta, x, 40, "mm");
-        }
-      }
-      last_dial_data = dial_data;
+    if (off_cycles > kPowerOffAfterCycles) {
+      disp.SetOn(false);
+      SleepTillDialIndicatorClocksAgain();
+      disp.Reset();   // Might've slept a long time. Make sure OK.
     }
+
+    if (last_dial.off != dial.off
+        || last_dial.negative != dial.negative
+        || last_dial.is_imperial != dial.is_imperial
+        || (last_dial.value == 0) != (dial.value == 0)) {
+      disp.ClearScreen();  // Visuals will change. Clean-slatify.
+    }
+
+    if (dial.off) {
+      if (!last_dial.off) {  // Only need to write if we just got here.
+        disp.Print(&progmem_font_smalltext.meta, 0, 0, "© Henner Zeller");
+        disp.Print(&progmem_font_tinytext.meta, 0, 16, "GNU Public License");
+        disp.Print(&progmem_font_tinytext.meta, 0, 32, "github.com/hzeller/");
+        disp.Print(&progmem_font_tinytext.meta, 0, 48, "digi-spherometer");
+      }
+    }
+    else if (dial.value == 0) {
+      disp.Print(&progmem_font_smalltext.meta, 48, 0, "flat");
+      disp.Print(&progmem_font_okfont.meta, 34, 16, "OK");
+    }
+    else if (!dial.negative) {
+      disp.Print(&progmem_font_smalltext.meta, 0, 8, "Please zero on");
+      disp.Print(&progmem_font_smalltext.meta, 8, 32, "flat surface");
+    }
+    else if (dial.value == last_dial.value
+             && dial.is_imperial == last_dial.is_imperial) {
+      // Value or unit did not change. No need to update display.
+    }
+    else {
+      // micrometer units or 0.00001" units. Imperial increments in steps of 5
+      const int32_t value = dial.is_imperial ? dial.value * 5 : dial.value;
+
+      // Print sag value we got from the dial indicator
+      x = disp.Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
+      x = disp.Print(&progmem_font_smalltext.meta, x, 0,
+                     strfmt(buffer, sizeof(buffer), value,
+                            dial.is_imperial ? 5 : 3, 7));
+      disp.Print(&progmem_font_smalltext.meta, x, 0,
+                 dial.is_imperial ? "\"  " : "mm");
+
+      // Make sure that it is clear we're talking about the sphere radius
+      disp.Print(&progmem_font_smalltext.meta, 0, 40, "r=");
+
+      // Calculating the sag values to radius in their respective units.
+      // We roundthe returned value to an integer, which is the type
+      // we can properly string format below.
+      // Fixpoint shift to display 1/10" unit
+      const float sag = dial.is_imperial ? value / 100000.0f : value / 1000.0f;
+      const float raw_radius = calc_r(dial.is_imperial, sag);
+      int32_t radius = roundf(dial.is_imperial ? 10 * raw_radius : raw_radius);
+
+      // If the value is too large, we don't want to overflow the display.
+      // Instead, we clamp it to highest value and show a little > indicator.
+      if (radius > 9999) {   // Limit digits to screen-size
+        disp.Print(&progmem_font_smalltext.meta, 0, 24, ">");
+        radius = 9999;
+      } else {
+        disp.Print(&progmem_font_smalltext.meta, 0, 24, " ");
+      }
+
+      // Different formatting of numbers in different units, including suffix
+      if (dial.is_imperial) {
+        // One decimal point, total of 5 characters (including point) 999.9
+        const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
+        x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
+        disp.Print(&progmem_font_bignumber.meta, x, 16, "\"");
+      } else {
+        // No decimal point, total of 4 characters: 9999
+        const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
+        x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
+        disp.Print(&progmem_font_smalltext.meta, x, 40, "mm");
+      }
+    }
+    last_dial = dial;
+  }
 }
