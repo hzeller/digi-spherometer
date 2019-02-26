@@ -169,7 +169,7 @@ uint8_t SSD1306Display::Print(const MetaFont *progmem_font,
   return xpos;
 }
 
-void SSD1306Display::FillEndOfStripe(uint8_t x_from, uint8_t x_to, uint8_t ypos,
+void SSD1306Display::FillStripeRange(uint8_t x_from, uint8_t x_to, uint8_t ypos,
                                      uint8_t fill_mask) {
   uint8_t page = ypos / 8;
   const uint8_t cmd[] = {

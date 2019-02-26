@@ -44,9 +44,9 @@
 constexpr float d_mm = 50.0f;
 
 // Pins the dial indicator is connected to.
-static constexpr uint8_t CLK_BIT  = (1<<4);
-static constexpr uint8_t DATA_BIT = (1<<3);
-static constexpr uint8_t BUTTON_BIT = (1<<1);
+constexpr uint8_t CLK_BIT  = (1<<4);
+constexpr uint8_t DATA_BIT = (1<<3);
+constexpr uint8_t BUTTON_BIT = (1<<1);
 
 // TODO: also take radius of balls used as feet into account.
 // TODO: factors and decimals for 2 and 3 digit indicators
@@ -117,9 +117,9 @@ void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
   disp->Print(font_smalltext, 0, 40, "r=");
 
   // Calculating the sag values to radius in their respective units.
-  // We roundthe returned value to an integer, which is the type
+  // We round the returned value to an integer, which is the type
   // we can properly string format below.
-  // Fixpoint shift to display 1/10" unit
+  // For imperial: fixpoint shift to display 1/10" unit
   int32_t radius = roundf(m.imperial ? 10 * m.radius : m.radius);
 
   // If the value is too large, we don't want to overflow the display.
@@ -150,8 +150,8 @@ void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
   const int32_t display_f = roundf(m.imperial ? 10*f : f);
   x = disp->Print(font_smalltext, x, 0, strfmt(display_f, m.imperial ? 1 : 0));
   x = disp->Print(font_smalltext, x, 0, m.imperial ? "\"  " : "mm");
-  disp->FillEndOfStripe(x, 127, 0, 0x00);
-  disp->FillEndOfStripe(x, 127, 8, 0x00);
+  disp->FillStripeRange(x, 127, 0, 0x00);
+  disp->FillStripeRange(x, 127, 8, 0x00);
 
   constexpr uint8_t per_page = 3;
   // First in mm, second in inches.
@@ -164,13 +164,13 @@ void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
     x = disp->Print(font_smalltext, 0, y, strfmt(dia, 0, 2));
     x = disp->Print(font_smalltext, x, y, m.imperial ? "\" ≈ ƒ/" : "mm ≈ ƒ/");
     x = disp->Print(font_smalltext, x, y, strfmt(f_N, 1));
-    disp->FillEndOfStripe(x, 127, y, 0x00);
-    disp->FillEndOfStripe(x, 127, y + 8, 0x00);
+    disp->FillStripeRange(x, 127, y, 0x00);
+    disp->FillStripeRange(x, 127, y + 8, 0x00);
   }
 
-  // Show 'scrollbar'. We have two pages, so show a brighgt bar going down.
+  // Show 'scrollbar'. We have two pages, so show a bright bar going down.
   for (int i = 0; i < 4; ++i) {
-    disp->FillEndOfStripe(127, 128, (i+4*page)*8, 0xff);
+    disp->FillStripeRange(127, 128, (i+4*page)*8, 0xff);
   }
 }
 
