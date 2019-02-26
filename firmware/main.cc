@@ -82,12 +82,52 @@ static void SleepTillDialIndicatorClocksAgain() {
   GIMSK = 0;
 }
 
+void ShowRadiusPage(SSD1306Display *disp, uint8_t imperial, int32_t value) {
+  char buffer[16];
+  // Print sag value we got from the dial indicator
+  uint8_t x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
+  x = disp->Print(&progmem_font_smalltext.meta, x, 0,
+                  strfmt(buffer, sizeof(buffer), value, imperial ? 5 : 3, 7));
+  disp->Print(&progmem_font_smalltext.meta, x, 0, imperial ? "\"  " : "mm");
+
+  // Make sure that it is clear we're talking about the sphere radius
+  disp->Print(&progmem_font_smalltext.meta, 0, 40, "r=");
+
+  // Calculating the sag values to radius in their respective units.
+  // We roundthe returned value to an integer, which is the type
+  // we can properly string format below.
+  // Fixpoint shift to display 1/10" unit
+  const float sag = imperial ? value / 100000.0f : value / 1000.0f;
+  const float raw_radius = calc_r(imperial, sag);
+  int32_t radius = roundf(imperial ? 10 * raw_radius : raw_radius);
+
+  // If the value is too large, we don't want to overflow the display.
+  // Instead, we clamp it to highest value and show a little > indicator.
+  if (radius > 9999) {   // Limit digits to screen-size
+    disp->Print(&progmem_font_smalltext.meta, 0, 24, ">");
+    radius = 9999;
+  } else {
+    disp->Print(&progmem_font_smalltext.meta, 0, 24, " ");
+  }
+
+  // Different formatting of numbers in different units, including suffix
+  if (imperial) {
+    // One decimal point, total of 5 characters (including point) 999.9
+    const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
+    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, str);
+    disp->Print(&progmem_font_bignumber.meta, x, 16, "\"");
+  } else {
+    // No decimal point, total of 4 characters: 9999
+    const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
+    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, str);
+    disp->Print(&progmem_font_smalltext.meta, x, 40, "mm");
+  }
+}
+
 int main() {
   _delay_ms(500);  // Let display warm up and get ready before the first i2c
   SSD1306Display disp;
 
-  char buffer[16];
-  uint8_t x;
   DialData last_dial;
   uint32_t off_cycles = 0;
   constexpr uint32_t kPowerOffAfterCycles = 150;
@@ -139,47 +179,7 @@ int main() {
     else {
       // micrometer units or 0.00001" units. Imperial increments in steps of 5
       const int32_t value = dial.is_imperial ? dial.value * 5 : dial.value;
-
-      // Print sag value we got from the dial indicator
-      x = disp.Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
-      x = disp.Print(&progmem_font_smalltext.meta, x, 0,
-                     strfmt(buffer, sizeof(buffer), value,
-                            dial.is_imperial ? 5 : 3, 7));
-      disp.Print(&progmem_font_smalltext.meta, x, 0,
-                 dial.is_imperial ? "\"  " : "mm");
-
-      // Make sure that it is clear we're talking about the sphere radius
-      disp.Print(&progmem_font_smalltext.meta, 0, 40, "r=");
-
-      // Calculating the sag values to radius in their respective units.
-      // We roundthe returned value to an integer, which is the type
-      // we can properly string format below.
-      // Fixpoint shift to display 1/10" unit
-      const float sag = dial.is_imperial ? value / 100000.0f : value / 1000.0f;
-      const float raw_radius = calc_r(dial.is_imperial, sag);
-      int32_t radius = roundf(dial.is_imperial ? 10 * raw_radius : raw_radius);
-
-      // If the value is too large, we don't want to overflow the display.
-      // Instead, we clamp it to highest value and show a little > indicator.
-      if (radius > 9999) {   // Limit digits to screen-size
-        disp.Print(&progmem_font_smalltext.meta, 0, 24, ">");
-        radius = 9999;
-      } else {
-        disp.Print(&progmem_font_smalltext.meta, 0, 24, " ");
-      }
-
-      // Different formatting of numbers in different units, including suffix
-      if (dial.is_imperial) {
-        // One decimal point, total of 5 characters (including point) 999.9
-        const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
-        x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
-        disp.Print(&progmem_font_bignumber.meta, x, 16, "\"");
-      } else {
-        // No decimal point, total of 4 characters: 9999
-        const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
-        x = disp.Print(&progmem_font_bignumber.meta, 15, 24, str);
-        disp.Print(&progmem_font_smalltext.meta, x, 40, "mm");
-      }
+      ShowRadiusPage(&disp, dial.is_imperial, value);
     }
     last_dial = dial;
   }
