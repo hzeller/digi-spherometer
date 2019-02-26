@@ -17,28 +17,30 @@
 
 #include "strfmt.h"
 
-const char *strfmt(char *buffer, uint8_t buflen, int32_t v,
-                   int8_t decimals, int8_t total_len) {
-    const bool is_neg = (v < 0);
-    if (is_neg) v = -v;
-    buffer = buffer + buflen - 1;
-    *buffer-- = '\0';
-    const char *pad_to = (total_len > 0) ? (buffer - total_len) : buffer;
-    bool is_first = true;  // properly print and decimal-handling zero value.
-    while (is_first || v > 0) {
-        *buffer-- = (v % 10) + '0';
-        v /= 10;
-        if (--decimals == 0)
-            *buffer-- = '.';
-        is_first = false;
-    }
-    if (decimals > 0) {
-        while (decimals-- > 0)
-            *buffer-- = '0';
-        *buffer-- = '.';
-    }
-    if (is_neg) *buffer-- = '-';
-    while (pad_to < buffer)
-        *buffer-- = ' ';
-    return buffer + 1;
+const char *strfmt(int32_t v, int8_t decimals, int8_t total_len) {
+  static char scratch[16];
+  constexpr auto buflen = sizeof(scratch);
+  char *buffer = scratch;
+  const bool is_neg = (v < 0);
+  if (is_neg) v = -v;
+  buffer = buffer + buflen - 1;
+  *buffer-- = '\0';
+  const char *pad_to = (total_len > 0) ? (buffer - total_len) : buffer;
+  bool is_first = true;  // properly print and decimal-handling zero value.
+  while (is_first || v > 0) {
+    *buffer-- = (v % 10) + '0';
+    v /= 10;
+    if (--decimals == 0)
+      *buffer-- = '.';
+    is_first = false;
+  }
+  if (decimals > 0) {
+    while (decimals-- > 0)
+      *buffer-- = '0';
+    *buffer-- = '.';
+  }
+  if (is_neg) *buffer-- = '-';
+  while (pad_to < buffer)
+    *buffer-- = ' ';
+  return buffer + 1;
 }

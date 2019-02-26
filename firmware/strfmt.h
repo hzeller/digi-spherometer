@@ -24,9 +24,7 @@
 // is placed in front of these many digits from the right.
 // The string is padded with spaces at the front to satisfy "total_len".
 //
-// Returns pointer to NUL-terminated string. Uses passed in "buffer" to
-// store string (but note, the return value is not necessarly pointing
-// at the beginning of the buffer).
-const char *strfmt(char *buffer, uint8_t buflen, int32_t number,
-                   int8_t decimals, int8_t total_len = -1);
+// Returns pointer to NUL-terminated, statically allocated string.
+// (invalidated with the next strfmt() call).
+const char *strfmt(int32_t number, int8_t decimals, int8_t total_len = -1);
 #endif // STRFMT_H

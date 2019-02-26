@@ -89,12 +89,10 @@ struct MeasureData {
 };
 
 void ShowRadiusPage(SSD1306Display *disp, struct MeasureData m) {
-  char buffer[16];
   // Print sag value we got from the dial indicator
   uint8_t x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
   x = disp->Print(&progmem_font_smalltext.meta, x, 0,
-                  strfmt(buffer, sizeof(buffer),
-                         m.raw_sag, m.imperial ? 5 : 3, 7));
+                  strfmt(m.raw_sag, m.imperial ? 5 : 3, 7));
   disp->Print(&progmem_font_smalltext.meta, x, 0, m.imperial ? "\"  " : "mm");
 
   // Make sure that it is clear we're talking about the sphere radius
@@ -118,13 +116,11 @@ void ShowRadiusPage(SSD1306Display *disp, struct MeasureData m) {
   // Different formatting of numbers in different units, including suffix
   if (m.imperial) {
     // One decimal point, total of 5 characters (including point) 999.9
-    const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
-    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, str);
+    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, strfmt(radius, 1, 5));
     disp->Print(&progmem_font_bignumber.meta, x, 16, "\"");
   } else {
     // No decimal point, total of 4 characters: 9999
-    const char *str = strfmt(buffer, sizeof(buffer), radius, 0, 4);
-    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, str);
+    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, strfmt(radius, 0, 4));
     disp->Print(&progmem_font_smalltext.meta, x, 40, "mm");
   }
 }
