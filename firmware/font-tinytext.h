@@ -15,5 +15,6 @@ struct ProgmemFont_tinytext_t {
 } __attribute__((packed));
 
 extern const struct ProgmemFont_tinytext_t PROGMEM progmem_font_tinytext;
+#define font_tinytext (&progmem_font_tinytext.meta)
 
 #endif // FONT_tinytext_

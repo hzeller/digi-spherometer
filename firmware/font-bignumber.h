@@ -15,5 +15,6 @@ struct ProgmemFont_bignumber_t {
 } __attribute__((packed));
 
 extern const struct ProgmemFont_bignumber_t PROGMEM progmem_font_bignumber;
+#define font_bignumber (&progmem_font_bignumber.meta)
 
 #endif // FONT_bignumber_

@@ -15,5 +15,6 @@ struct ProgmemFont_okfont_t {
 } __attribute__((packed));
 
 extern const struct ProgmemFont_okfont_t PROGMEM progmem_font_okfont;
+#define font_okfont (&progmem_font_okfont.meta)
 
 #endif // FONT_okfont_

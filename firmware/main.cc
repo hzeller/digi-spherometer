@@ -108,13 +108,13 @@ struct MeasureData {
 
 void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
   // Print sag value we got from the dial indicator
-  uint8_t x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
-  x = disp->Print(&progmem_font_smalltext.meta, x, 0,
+  uint8_t x = disp->Print(font_smalltext, 0, 0, "sag=");
+  x = disp->Print(font_smalltext, x, 0,
                   strfmt(m.raw_sag, m.imperial ? 5 : 3, 7));
-  disp->Print(&progmem_font_smalltext.meta, x, 0, m.imperial ? "\"  " : "mm");
+  disp->Print(font_smalltext, x, 0, m.imperial ? "\"  " : "mm");
 
   // Make sure that it is clear we're talking about the sphere radius
-  disp->Print(&progmem_font_smalltext.meta, 0, 40, "r=");
+  disp->Print(font_smalltext, 0, 40, "r=");
 
   // Calculating the sag values to radius in their respective units.
   // We roundthe returned value to an integer, which is the type
@@ -125,33 +125,31 @@ void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
   // If the value is too large, we don't want to overflow the display.
   // Instead, we clamp it to highest value and show a little > indicator.
   if (radius > 9999) {   // Limit digits to screen-size
-    disp->Print(&progmem_font_smalltext.meta, 0, 24, ">");
+    disp->Print(font_smalltext, 0, 24, ">");
     radius = 9999;
   } else {
-    disp->Print(&progmem_font_smalltext.meta, 0, 24, " ");
+    disp->Print(font_smalltext, 0, 24, " ");
   }
 
   // Different formatting of numbers in different units, including suffix
   if (m.imperial) {
     // One decimal point, total of 5 characters (including point) 999.9
-    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, strfmt(radius, 1, 5));
-    disp->Print(&progmem_font_bignumber.meta, x, 16, "\"");
+    x = disp->Print(font_bignumber, 15, 24, strfmt(radius, 1, 5));
+    disp->Print(font_bignumber, x, 16, "\"");
   } else {
     // No decimal point, total of 4 characters: 9999
-    x = disp->Print(&progmem_font_bignumber.meta, 15, 24, strfmt(radius, 0, 4));
-    disp->Print(&progmem_font_smalltext.meta, x, 40, "mm");
+    x = disp->Print(font_bignumber, 15, 24, strfmt(radius, 0, 4));
+    disp->Print(font_smalltext, x, 40, "mm");
   }
 }
 
 void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
   uint8_t x;
   const float f = m.radius / 2;
-  x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "ƒ = ");
+  x = disp->Print(font_smalltext, 0, 0, "ƒ = ");
   const int32_t display_f = roundf(m.imperial ? 10*f : f);
-  x = disp->Print(&progmem_font_smalltext.meta, x, 0,
-                  strfmt(display_f, m.imperial ? 1 : 0));
-  x = disp->Print(&progmem_font_smalltext.meta, x, 0,
-                  m.imperial ? "\"  " : "mm");
+  x = disp->Print(font_smalltext, x, 0, strfmt(display_f, m.imperial ? 1 : 0));
+  x = disp->Print(font_smalltext, x, 0, m.imperial ? "\"  " : "mm");
   disp->FillEndOfStripe(x, 127, 0, 0x00);
   disp->FillEndOfStripe(x, 127, 8, 0x00);
 
@@ -163,10 +161,9 @@ void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
     const float dia = sample_diameters[m.imperial][i + per_page*page];
     const int32_t f_N = roundf(10 * f / dia);  // 10* for extra digit
     const uint8_t y = 16 + i*16;
-    x = disp->Print(&progmem_font_smalltext.meta, 0, y, strfmt(dia, 0, 2));
-    x = disp->Print(&progmem_font_smalltext.meta, x, y,
-                    m.imperial ? "\" ≈ ƒ/" : "mm ≈ ƒ/");
-    x = disp->Print(&progmem_font_smalltext.meta, x, y, strfmt(f_N, 1));
+    x = disp->Print(font_smalltext, 0, y, strfmt(dia, 0, 2));
+    x = disp->Print(font_smalltext, x, y, m.imperial ? "\" ≈ ƒ/" : "mm ≈ ƒ/");
+    x = disp->Print(font_smalltext, x, y, strfmt(f_N, 1));
     disp->FillEndOfStripe(x, 127, y, 0x00);
     disp->FillEndOfStripe(x, 127, y + 8, 0x00);
   }
@@ -224,19 +221,19 @@ int main() {
 
     if (dial.off) {
       if (!last_dial.off) {  // Only need to write if we just got here.
-        disp.Print(&progmem_font_smalltext.meta, 0, 0, "© Henner Zeller");
-        disp.Print(&progmem_font_tinytext.meta, 0, 16, "GNU Public License");
-        disp.Print(&progmem_font_tinytext.meta, 0, 32, "github.com/hzeller/");
-        disp.Print(&progmem_font_tinytext.meta, 0, 48, "digi-spherometer");
+        disp.Print(font_smalltext, 0, 0, "© Henner Zeller");
+        disp.Print(font_tinytext, 0, 16, "GNU Public License");
+        disp.Print(font_tinytext, 0, 32, "github.com/hzeller/");
+        disp.Print(font_tinytext, 0, 48, "digi-spherometer");
       }
     }
     else if (dial.value == 0) {
-      disp.Print(&progmem_font_smalltext.meta, 48, 0, "flat");
-      disp.Print(&progmem_font_okfont.meta, 34, 16, "OK");
+      disp.Print(font_smalltext, 48, 0, "flat");
+      disp.Print(font_okfont, 34, 16, "OK");
     }
     else if (!dial.negative) {
-      disp.Print(&progmem_font_smalltext.meta, 0, 8, "Please zero on");
-      disp.Print(&progmem_font_smalltext.meta, 8, 32, "flat surface");
+      disp.Print(font_smalltext, 0, 8, "Please zero on");
+      disp.Print(font_smalltext, 8, 32, "flat surface");
     }
     else if (dial.value == last_dial.value
              && dial.is_imperial == last_dial.is_imperial
