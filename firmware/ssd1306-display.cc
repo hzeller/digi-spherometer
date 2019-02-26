@@ -168,3 +168,24 @@ uint8_t SSD1306Display::Print(const MetaFont *progmem_font,
   }
   return xpos;
 }
+
+void SSD1306Display::FillEndOfStripe(uint8_t x_from, uint8_t x_to, uint8_t ypos,
+                                     uint8_t fill_mask) {
+  uint8_t page = ypos / 8;
+  const uint8_t cmd[] = {
+    REG_COL_ADDR, x_from, uint8_t(x_to-1),
+    REG_PAGE_ADDR, page, page,
+  };
+
+  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
+  i2c_.Write(COMMAND_TRANSFER);
+  for (uint8_t i = 0; i < sizeof(cmd); ++i)
+    i2c_.Write(cmd[i]);
+  i2c_.FinishTransmission();
+
+  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
+  i2c_.Write(DATA_TRANSFER);
+  for (uint8_t x = x_from; x < x_to; ++x)
+    i2c_.Write(fill_mask);
+  i2c_.FinishTransmission();
+}

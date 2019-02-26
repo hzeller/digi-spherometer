@@ -46,6 +46,7 @@ constexpr float d_mm = 50.0f;
 // Pins the dial indicator is connected to.
 static constexpr uint8_t CLK_BIT  = (1<<4);
 static constexpr uint8_t DATA_BIT = (1<<3);
+static constexpr uint8_t BUTTON_BIT = (1<<1);
 
 // TODO: also take radius of balls used as feet into account.
 // TODO: factors and decimals for 2 and 3 digit indicators
@@ -82,13 +83,30 @@ static void SleepTillDialIndicatorClocksAgain() {
   GIMSK = 0;
 }
 
+// Keep track of button release before next clicked() event is triggered.
+class Button {
+public:
+  Button() { PORTB |= BUTTON_BIT; /* pullup */}
+
+  bool clicked() {
+    const bool current_press = (PINB & BUTTON_BIT) == 0;  // negative logic
+    const bool before = previous_pressed_;
+    previous_pressed_ = current_press;
+    return (current_press && !before);
+  }
+
+private:
+  bool previous_pressed_ = false;
+};
+
+// Precalculated measure data, to be used in radius and focal page.
 struct MeasureData {
   uint32_t raw_sag;
   uint8_t imperial;
   float radius;
 };
 
-void ShowRadiusPage(SSD1306Display *disp, struct MeasureData m) {
+void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
   // Print sag value we got from the dial indicator
   uint8_t x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
   x = disp->Print(&progmem_font_smalltext.meta, x, 0,
@@ -125,15 +143,60 @@ void ShowRadiusPage(SSD1306Display *disp, struct MeasureData m) {
   }
 }
 
+void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
+  uint8_t x;
+  const float f = m.radius / 2;
+  x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "ƒ = ");
+  const int32_t display_f = roundf(m.imperial ? 10*f : f);
+  x = disp->Print(&progmem_font_smalltext.meta, x, 0,
+                  strfmt(display_f, m.imperial ? 1 : 0));
+  x = disp->Print(&progmem_font_smalltext.meta, x, 0,
+                  m.imperial ? "\"  " : "mm");
+  disp->FillEndOfStripe(x, 127, 0, 0x00);
+  disp->FillEndOfStripe(x, 127, 8, 0x00);
+
+  constexpr uint8_t per_page = 3;
+  // First in mm, second in inches.
+  float sample_diameters[][6] = {{ 150, 200, 250,    300, 400, 600 },
+                                 { 6, 8, 10,         12, 16, 20 }};
+  for (uint8_t i = 0; i < per_page; ++i) {
+    const float dia = sample_diameters[m.imperial][i + per_page*page];
+    const int32_t f_N = roundf(10 * f / dia);  // 10* for extra digit
+    const uint8_t y = 16 + i*16;
+    x = disp->Print(&progmem_font_smalltext.meta, 0, y, strfmt(dia, 0, 2));
+    x = disp->Print(&progmem_font_smalltext.meta, x, y,
+                    m.imperial ? "\" ≈ ƒ/" : "mm ≈ ƒ/");
+    x = disp->Print(&progmem_font_smalltext.meta, x, y, strfmt(f_N, 1));
+    disp->FillEndOfStripe(x, 127, y, 0x00);
+    disp->FillEndOfStripe(x, 127, y + 8, 0x00);
+  }
+
+  // Show 'scrollbar'. We have two pages, so show a brighgt bar going down.
+  for (int i = 0; i < 4; ++i) {
+    disp->FillEndOfStripe(127, 128, (i+4*page)*8, 0xff);
+  }
+}
+
 int main() {
   _delay_ms(500);  // Let display warm up and get ready before the first i2c
   SSD1306Display disp;
+  Button button;
 
   DialData last_dial;
+  uint8_t last_page = 0xff;  // outside range, so guaranteed not seen before.
+
   uint32_t off_cycles = 0;
+  uint8_t display_page = 0;
+
   constexpr uint32_t kPowerOffAfterCycles = 150;
   for (;;) {
     DialData dial = ReadDialIndicator(CLK_BIT, DATA_BIT);
+
+    if (button.clicked()) {
+      display_page += 1;
+      if (display_page == 3) display_page = 0;
+      disp.ClearScreen();
+    }
 
     // If the dial indicator is off, we watch this for a while. After
     // kPowerOffAfterCycles, we go to deep sleep. In the time between
@@ -147,7 +210,9 @@ int main() {
     if (off_cycles > kPowerOffAfterCycles) {
       disp.SetOn(false);
       SleepTillDialIndicatorClocksAgain();
-      disp.Reset();   // Might've slept a long time. Make sure OK.
+      disp.Reset();      // Might've slept a long time. Make sure OK.
+      last_page = 0xff;
+      display_page = 0;  // Go back to radius page after waking up.
     }
 
     if (last_dial.off != dial.off
@@ -174,7 +239,8 @@ int main() {
       disp.Print(&progmem_font_smalltext.meta, 8, 32, "flat surface");
     }
     else if (dial.value == last_dial.value
-             && dial.is_imperial == last_dial.is_imperial) {
+             && dial.is_imperial == last_dial.is_imperial
+             && last_page == display_page) {
       // Value or unit did not change. No need to update display.
     }
     else {
@@ -186,8 +252,13 @@ int main() {
       const float sag = dial.is_imperial ? value / 100000.0f : value / 1000.0f;
       prepared_data.radius = calc_r(dial.is_imperial, sag);
 
-      ShowRadiusPage(&disp, prepared_data);
+      if (display_page == 0)
+        ShowRadiusPage(&disp, prepared_data);
+      else
+        ShowFocusPage(&disp, prepared_data, display_page - 1);
     }
+
     last_dial = dial;
+    last_page = display_page;
   }
 }

@@ -66,6 +66,12 @@ public:
   uint8_t Print(const MetaFont *progmem_font,
                 uint8_t xpos, uint8_t ypos, const char *utf8_text);
 
+  // Fills a stripe in x-range [x_from...x_to). Stripe is given by y coordinate
+  // ypos, but note that only mulitple of 8 are handled.
+  // fill_mask provides the pattern.
+  void FillEndOfStripe(uint8_t x_from, uint8_t x_to,
+                       uint8_t ypos, uint8_t fill_mask);
+
 private:
   I2CMaster i2c_;
 };
