@@ -23,6 +23,7 @@
 #include <avr/sleep.h>
 #include <stdint.h>
 #include <util/delay.h>
+#include <math.h>
 
 #include "ssd1306-display.h"
 #include "strfmt.h"
@@ -152,12 +153,13 @@ int main() {
         disp.Print(&progmem_font_smalltext.meta, 0, 40, "r=");
 
         // Calculating the sag values to radius in their respective units.
-        // We truncate the returned value to an integer, which is the type
+        // We roundthe returned value to an integer, which is the type
         // we can properly string format below.
         float sag = dial_data.is_imperial ? value / 100000.0f : value / 1000.0f;
-        int32_t radius = dial_data.is_imperial
-          ? 10 * calc_r_inch(sag)   // Fixpoint shift to display 1/10" unit
-          : calc_r_mm(sag);
+        // Fixpoint shift to display 1/10" unit
+        int32_t radius = roundf(dial_data.is_imperial
+                                ? 10 * calc_r_inch(sag)
+                                : calc_r_mm(sag));
 
         // If the value is too large, we don't want to overflow the display.
         // Instead, we clamp it to highest value and show a little > indicator.
