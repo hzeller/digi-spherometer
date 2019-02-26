@@ -33,11 +33,22 @@
 #include "font-tinytext.h"
 #include "font-okfont.h"
 
+// Choose reading function of dial indicator here.
+// (only  indicator we support right now is autolet, but we could have a
+// conditional include here)
+#include "autolet-dial-indicator.h"
+
+// ------------------------------ configurable parameters ------------
 // Distance center to feet. Radius of the Spherometer-feet circle.
 constexpr float d_mm = 50.0f;
 
-// TODO: also take radius of balls used as feet into account.
+// Pins the dial indicator is connected to.
+static constexpr uint8_t CLK_BIT  = (1<<4);
+static constexpr uint8_t DATA_BIT = (1<<3);
 
+// TODO: also take radius of balls used as feet into account.
+// TODO: factors and decimals for 2 and 3 digit indicators
+// ------------------------------ nothing to be changed below --------
 // ... derived from the above; let's compile-time calculate them.
 constexpr float d_inch = d_mm / 25.4f;
 constexpr float d_mm_squared = d_mm * d_mm;
@@ -48,75 +59,6 @@ static float calc_r_mm(float sag) {
 }
 static float calc_r_inch(float sag) {
     return (d_inch_squared + sag*sag) / (2*sag);
-}
-
-// Pins the dial indicator is connected to.
-static constexpr uint8_t CLK_BIT  = (1<<4);
-static constexpr uint8_t DATA_BIT = (1<<3);
-
-struct DialData {
-  int32_t value : 20;      // 20 bits of raw count data
-  uint8_t negative : 1;    // if true, value avoe is a negative number.
-  uint8_t off : 1;         // dial indicator off, couldn't read data.
-  uint8_t dummy : 1;
-  uint8_t is_imperial : 1;  // Reading is in imperial units
-};
-
-// Read the dial indicator (my model: AUTOLET digital indicator with 1μm res).
-//
-// Data is clocked out LSB first. Data is read on rising edge of CLK.
-// We get 24 bits, 20 of which are the read count (or number*2 for imperial,
-// as they count the last half digit) and a negate and is_imperial bit.
-// We also fill one 'off detection' bit: when we see that the dial is not
-// clocking, so we can consider it OFF (otherwise we'd wait forever here).
-//
-// Since we're level converting the inputs from 1.5V to VCC with a transistor,
-// the signals are inverted, i.e. we're looking at the _falling_ edge of
-// CLK and invert the bit we read.
-static DialData readDialIndicator() {
-  constexpr uint16_t kInitialWaitTime = 5000;
-  constexpr uint16_t kOffDetectionCount = 15000;
-
-  union {
-    struct DialData data;
-    uint32_t bits;
-  } result;
-  result.bits = 0;
-
-  // Wait until we have a stable time of non-clocking, so that we don't
-  // jump into the middle of some clock cycle.
-  uint16_t stable_clock_off_period = kInitialWaitTime;
-  uint16_t clock_inactive_count = 0;
-  while (stable_clock_off_period--) {
-    if (PINB & CLK_BIT) {
-      clock_inactive_count++;
-      stable_clock_off_period = kInitialWaitTime;
-    } else {
-      clock_inactive_count = 0;
-    }
-    if (clock_inactive_count > kOffDetectionCount) {
-      result.data.off = 1;
-      return result.data;
-    }
-  }
-
-  uint32_t current_bit = 1;
-  clock_inactive_count = 0;
-  for (int i = 0; i < 24; ++i) {
-    while ((PINB & CLK_BIT) == 0)  // Wait for clk to go high.
-      ;
-    while (PINB & CLK_BIT) {      // Wait for negative edge
-      clock_inactive_count++;
-      if (clock_inactive_count > kOffDetectionCount) {
-        result.data.off = 1;
-        return result.data;
-      }
-    }
-    if ((PINB & DATA_BIT) == 0)
-      result.bits |= current_bit;
-    current_bit <<= 1;
-  }
-  return result.data;
 }
 
 // Get microcontroller to deep sleep. We enable a level changing interrupt
@@ -150,7 +92,7 @@ int main() {
     uint32_t off_cycles = 0;
     constexpr uint32_t kPowerOffAfterCycles = 150;
     for (;;) {
-      DialData dial_data = readDialIndicator();
+      DialData dial_data = ReadDialIndicator(CLK_BIT, DATA_BIT);
 
       // If the dial indicator is off, we watch this for a while. After
       // kPowerOffAfterCycles, we go to deep sleep. In the time between
