@@ -82,13 +82,20 @@ static void SleepTillDialIndicatorClocksAgain() {
   GIMSK = 0;
 }
 
-void ShowRadiusPage(SSD1306Display *disp, uint8_t imperial, int32_t value) {
+struct MeasureData {
+  uint32_t raw_sag;
+  uint8_t imperial;
+  float radius;
+};
+
+void ShowRadiusPage(SSD1306Display *disp, struct MeasureData m) {
   char buffer[16];
   // Print sag value we got from the dial indicator
   uint8_t x = disp->Print(&progmem_font_smalltext.meta, 0, 0, "sag=");
   x = disp->Print(&progmem_font_smalltext.meta, x, 0,
-                  strfmt(buffer, sizeof(buffer), value, imperial ? 5 : 3, 7));
-  disp->Print(&progmem_font_smalltext.meta, x, 0, imperial ? "\"  " : "mm");
+                  strfmt(buffer, sizeof(buffer),
+                         m.raw_sag, m.imperial ? 5 : 3, 7));
+  disp->Print(&progmem_font_smalltext.meta, x, 0, m.imperial ? "\"  " : "mm");
 
   // Make sure that it is clear we're talking about the sphere radius
   disp->Print(&progmem_font_smalltext.meta, 0, 40, "r=");
@@ -97,9 +104,7 @@ void ShowRadiusPage(SSD1306Display *disp, uint8_t imperial, int32_t value) {
   // We roundthe returned value to an integer, which is the type
   // we can properly string format below.
   // Fixpoint shift to display 1/10" unit
-  const float sag = imperial ? value / 100000.0f : value / 1000.0f;
-  const float raw_radius = calc_r(imperial, sag);
-  int32_t radius = roundf(imperial ? 10 * raw_radius : raw_radius);
+  int32_t radius = roundf(m.imperial ? 10 * m.radius : m.radius);
 
   // If the value is too large, we don't want to overflow the display.
   // Instead, we clamp it to highest value and show a little > indicator.
@@ -111,7 +116,7 @@ void ShowRadiusPage(SSD1306Display *disp, uint8_t imperial, int32_t value) {
   }
 
   // Different formatting of numbers in different units, including suffix
-  if (imperial) {
+  if (m.imperial) {
     // One decimal point, total of 5 characters (including point) 999.9
     const char *str = strfmt(buffer, sizeof(buffer), radius, 1, 5);
     x = disp->Print(&progmem_font_bignumber.meta, 15, 24, str);
@@ -178,8 +183,14 @@ int main() {
     }
     else {
       // micrometer units or 0.00001" units. Imperial increments in steps of 5
-      const int32_t value = dial.is_imperial ? dial.value * 5 : dial.value;
-      ShowRadiusPage(&disp, dial.is_imperial, value);
+      struct MeasureData prepared_data;
+      int32_t value = dial.is_imperial ? dial.value * 5 : dial.value;
+      prepared_data.raw_sag = value;
+      prepared_data.imperial = dial.is_imperial;
+      const float sag = dial.is_imperial ? value / 100000.0f : value / 1000.0f;
+      prepared_data.radius = calc_r(dial.is_imperial, sag);
+
+      ShowRadiusPage(&disp, prepared_data);
     }
     last_dial = dial;
   }
