@@ -46,10 +46,12 @@ constexpr float d_mm = 50.0f;
 // Pins the dial indicator is connected to.
 constexpr uint8_t CLK_BIT  = (1<<4);
 constexpr uint8_t DATA_BIT = (1<<3);
-constexpr uint8_t BUTTON_BIT = (1<<1);
+
+constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
 
 // TODO: also take radius of balls used as feet into account.
 // TODO: factors and decimals for 2 and 3 digit indicators
+
 // ------------------------------ nothing to be changed below --------
 // ... derived from the above; let's compile-time calculate them.
 constexpr float d_inch = d_mm / 25.4f;
@@ -145,7 +147,7 @@ void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
 
 void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
   uint8_t x;
-  const float f = m.radius / 2;
+  const float f = m.radius / 2;  // Focal length of a sphere.
   x = disp->Print(font_smalltext, 0, 0, "ƒ = ");
   const int32_t display_f = roundf(m.imperial ? 10*f : f);
   x = disp->Print(font_smalltext, x, 0, strfmt(display_f, m.imperial ? 1 : 0));
@@ -153,10 +155,11 @@ void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
   disp->FillStripeRange(x, 127, 0, 0x00);
   disp->FillStripeRange(x, 127, 8, 0x00);
 
+  // With this ƒ, show the ƒ/N for a couple of common mirror diameters
   constexpr uint8_t per_page = 3;
   // First in mm, second in inches.
-  float sample_diameters[][6] = {{ 150, 200, 250,    300, 400, 600 },
-                                 { 6, 8, 10,         12, 16, 20 }};
+  float sample_diameters[2][6] = {{ 150, 200, 250,    300, 400, 600 },
+                                 {    6,   8,  10,     12,  16,  20 }};
   for (uint8_t i = 0; i < per_page; ++i) {
     const float dia = sample_diameters[m.imperial][i + per_page*page];
     const int32_t f_N = roundf(10 * f / dia);  // 10* for extra digit
@@ -173,6 +176,12 @@ void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
     disp->FillStripeRange(127, 128, (i+4*page)*8, 0xff);
   }
 }
+
+// Returns if the absolute measurement value is deemed 'flat'. This should
+// be around zero, but indicators can create a little bit of jumping around
+// there. Let's be gentle and not drive OCD's crazy having to press the zero
+// button all the time.
+static inline bool is_flat(int32_t value) { return value < 2; }
 
 int main() {
   _delay_ms(500);  // Let display warm up and get ready before the first i2c
@@ -215,7 +224,7 @@ int main() {
     if (last_dial.off != dial.off
         || last_dial.negative != dial.negative
         || last_dial.is_imperial != dial.is_imperial
-        || (last_dial.value == 0) != (dial.value == 0)) {
+        || is_flat(last_dial.abs_value) != is_flat(dial.abs_value)) {
       disp.ClearScreen();  // Visuals will change. Clean-slatify.
     }
 
@@ -227,7 +236,7 @@ int main() {
         disp.Print(font_tinytext, 0, 48, "digi-spherometer");
       }
     }
-    else if (dial.value == 0) {
+    else if (is_flat(dial.abs_value)) {
       disp.Print(font_smalltext, 48, 0, "flat");
       disp.Print(font_okfont, 34, 16, "OK");
     }
@@ -235,15 +244,15 @@ int main() {
       disp.Print(font_smalltext, 0, 8, "Please zero on");
       disp.Print(font_smalltext, 8, 32, "flat surface");
     }
-    else if (dial.value == last_dial.value
+    else if (dial.abs_value == last_dial.abs_value
              && dial.is_imperial == last_dial.is_imperial
              && last_page == display_page) {
       // Value or unit did not change. No need to update display.
     }
     else {
       // micrometer units or 0.00001" units. Imperial increments in steps of 5
-      struct MeasureData prepared_data;
-      int32_t value = dial.is_imperial ? dial.value * 5 : dial.value;
+      MeasureData prepared_data;
+      int32_t value = dial.is_imperial ? dial.abs_value * 5 : dial.abs_value;
       prepared_data.raw_sag = value;
       prepared_data.imperial = dial.is_imperial;
       const float sag = dial.is_imperial ? value / 100000.0f : value / 1000.0f;

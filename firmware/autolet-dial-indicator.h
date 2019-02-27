@@ -30,9 +30,9 @@
 
 
 struct DialData {
-  int32_t value : 20;      // 20 bits of raw count data
-  uint8_t negative : 1;    // if true, value avoe is a negative number.
-  uint8_t off : 1;         // dial indicator off, couldn't read data.
+  int32_t abs_value : 20;   // 20 bits of raw count data. Absolute value.
+  uint8_t negative : 1;     // if true, value above is a negative number.
+  uint8_t off : 1;          // dial indicator off, couldn't read data.
   uint8_t dummy_notused : 1;
   uint8_t is_imperial : 1;  // Reading is in imperial units
 };
