@@ -44,6 +44,10 @@ static constexpr uint8_t DATA_TRANSFER    = 0x40;
 
 static constexpr uint8_t SSD1306_I2C_ADDRESS = 0x78;
 
+static constexpr bool upside_down = false;  // Rotate by 180 degrees.
+static constexpr bool external_vcc = false;
+
+
 SSD1306Display::SSD1306Display() {
   Reset();
 }
@@ -53,13 +57,11 @@ void SSD1306Display::Reset() {
 
   // Init stuff.
   const uint8_t h = 64;
-  const bool external_vcc = false;
-
   static const uint8_t PROGMEM init_sequence[] = {
     REG_MEM_ADDR, 0x00,
     REG_DISP_START_LINE,
-    REG_SEG_REMAP | 0x01,  // column addr 127 mapped to SEG0
-    REG_COM_OUT_DIR | 0x08, // scan from COM[N] to COM0
+    REG_SEG_REMAP | (upside_down ? 0x01 : 0x00),
+    REG_COM_OUT_DIR | (upside_down ? 0x08 : 0x00),
     REG_DISP_OFFSET, 0x00,
     REG_COM_PIN_CFG, h == 32 ? 0x02 : 0x12,
     REG_DISP_CLK_DIV, 0x80,
