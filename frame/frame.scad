@@ -3,9 +3,9 @@
 $fn=128;
 e=0.01;
 
-inset_m3_dia=3.8;
-inset_m3_len=4;
+m3_dia=3.2;
 m3_head_dia=6;
+m3_head_len=5.5;
 
 dial_dia=57.5;
 dial_wall=2;
@@ -30,10 +30,9 @@ display_front_radius=5;
 
 fit_tolerance=0.3;  // Tolerance of parts in contact.
 
-module inset_with_screw(distance=3) {
-     translate([0, 0, -inset_m3_len+e]) cylinder(r=inset_m3_dia/2, h=inset_m3_len);
-     cylinder(r=3.2/2, h=distance+e);
-     translate([0, 0, distance]) cylinder(r=m3_head_dia/2, h=20);
+module m3_screw(len=60) {
+     cylinder(r=m3_dia/2, h=len);
+     translate([0, 0, -20+e]) cylinder(r=m3_head_dia/2, h=20);
 }
 
 module stem_punch() {
@@ -41,7 +40,6 @@ module stem_punch() {
      scale([1, 0.98, 1]) translate([0, 0, -25]) cylinder(r=stem_dia/2, h=50);
      //translate([-stem_dia/2, -20, -e]) cube([stem_dia, 20, 50]);
 }
-
 
 module stem_holder() {
      cylinder(r=stem_dia/2 + 4, h=stem_high);
@@ -111,10 +109,8 @@ module aa_punch() {
 module aabat(punch=false) {
      translate([0, 0, -aa_len/2]) {
 	  cylinder(r=aa_dia/2, h=aa_len);
-	  if (punch) {
-	       translate([-aa_dia/2, 0, 0]) cube([aa_dia, 2*aa_dia, aa_len]);
-	       rotate([0, 0, -10]) translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
-	  }
+	  translate([-aa_dia/2, 0, 0]) cube([aa_dia, aa_dia/2, aa_len]);
+	  rotate([0, 0, -10]) translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
      }
 }
 
@@ -124,25 +120,37 @@ module battery_box_punch() {
      thick=aa_dia+2*aa_wall;
 
      translate([0, thick/2, 0]) {
-	  translate([-(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) aabat(punch=true);
-	  translate([+(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) rotate([0, 180, 0]) aabat(punch=true);
+	  translate([-(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) aabat();
+	  translate([+(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) rotate([0, 180, 0]) aabat();
 
-	  empty_space=0.1;
+	  empty_space_fraction=0.05;
 	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, aa_wall])
-	       cube([aa_dia+aa_dist, 40, empty_space*height]);
-	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, height-aa_wall-empty_space*height])
-	       cube([aa_dia+aa_dist, 40, empty_space*height]);
+	       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
+	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, height-aa_wall-empty_space_fraction*height])
+	       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
 
-	  translate([0, -aa_dia/2+aa_wall, height/2]) rotate([-90, 0, 0]) cylinder(r=3.5/2, h=40);
-	  translate([0, aa_dia/2-inset_m3_len, height/2]) rotate([-90, 0, 0]) cylinder(r=inset_m3_dia/2, h=40);
-	  //translate([-6, 0.2*-aa_dia/2, aa_wall]) cube([12, 30, aa_len]);
+	  translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(aa_dia+1*aa_wall-m3_head_len);
+     }
+}
+
+// difference to remove the lid, intersection to get lid.
+module battery_box_separator(lid_offset=5) {
+     wedge=20;
+     height=aa_len;
+     width=2*aa_dia + aa_dist;
+     thick=aa_dia+2*aa_wall;
+     translate([0, thick/2-lid_offset, height/2+aa_wall]) {
+	  hull() {
+	       translate([0, aa_dia/2, 0]) cube([width, 1, height], center=true);
+	       translate([0, aa_dia/2+wedge, 0]) cube([width+2*wedge, 1, height+2*wedge], center=true);
+	  }
      }
 }
 
 module battery_box() {
      height=aa_len + 2*aa_wall;
      width=2*aa_dia + aa_dist + 2*aa_wall;
-     thick=aa_dia+aa_wall;
+     thick=aa_dia+2*aa_wall;
      difference() {
 	  translate([0, thick/2, 0])  translate([-width/2, -thick/2, 0])
 	       cube([width, thick, height]);
@@ -180,10 +188,13 @@ module dial_case(cable_slots=true) {
 	       }
 	  }
 	  dial_punch(cable_slots);
-	  translate([stem_mount_screw_distance/2, 0, stem_high/2+4])
-	       rotate([90, 0, 0]) inset_with_screw();
-	  translate([-stem_mount_screw_distance/2, 0, stem_high/2+4])
-	       rotate([90, 0, 0]) inset_with_screw();
+
+	  mount_meat = 5;  // The 'meat' before we hit the butt-surface
+	  mount_screw_len = dial_thick - dial_stem_pos + mount_meat;
+	  translate([stem_mount_screw_distance/2, -mount_meat, stem_high/2+4])
+	       rotate([-90, 0, 0]) m3_screw(mount_screw_len);
+	  translate([-stem_mount_screw_distance/2, -mount_meat, stem_high/2+4])
+	       rotate([-90, 0, 0]) m3_screw(mount_screw_len);
 	  translate([0, dial_thick - dial_stem_pos, 0]) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
@@ -196,10 +207,21 @@ module dial_separator() {
      translate([-50, -100, -e]) cube([100, 100, stem_high+dial_wall+8]);
 }
 
+module dial_battery_lid() {
+     intersection() {
+	  dial_case();
+	  translate([0, dial_thick - dial_stem_pos + fit_tolerance, 0]) battery_box_separator();
+	  // Make lid a tiny bit shorter at the bottom, so that it fits
+	  // comfortably on the screwed-down case.
+	  translate([0, 0, 100+0.5]) cube([200, 200, 200], center=true);
+     }
+}
+
 module dial_backend() {
      difference() {
 	  dial_case();
 	  dial_separator();
+	  translate([0, dial_thick - dial_stem_pos, 0]) battery_box_separator();
      }
 }
 
@@ -210,5 +232,6 @@ module dial_frontend() {
      }
 }
 
-color("blue") render() dial_backend();
+color("yellow") render() dial_backend();
 color("red") render() dial_frontend();
+color("blue") render() dial_battery_lid();
