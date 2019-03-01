@@ -2,10 +2,13 @@
 // CAVE: Super-hacky right now while exploring different shape.
 $fn=128;
 e=0.01;
+fit_tolerance=0.3;  // Tolerance of parts in contact.
 
 m3_dia=3.2;
 m3_head_dia=6;
-m3_head_len=5.5;
+m3_head_len=3;
+m3_nut_dia=6.2;
+m3_nut_thick=2.8;
 
 dial_dia=57.5;
 dial_wall=2;
@@ -17,7 +20,7 @@ stem_dia=8;
 stem_high=21.5 - 6;   // height stem - acrylic thick
 stem_mount_screw_distance=stem_dia + 8;
 
-aa_dia=15;
+aa_dia=14.5 + 2*fit_tolerance;
 aa_len=50.5 + 8;  // for contacts
 aa_wall=2;
 aa_dist = 8;      // Distance between batteries
@@ -28,11 +31,21 @@ display_wide=55;
 display_high=35;
 display_front_radius=5;
 
-fit_tolerance=0.3;  // Tolerance of parts in contact.
+bottom_mount_offset=7;  // Bottom screws. Offset from center towards the back.
+bottom_mount_distance=display_wide - 13;  // right/left distance.
 
-module m3_screw(len=60) {
+// slit_nut: make a space to slide a nut in while printing.
+module m3_screw(len=60, nut_at=-1, slit_nut=false) {
      cylinder(r=m3_dia/2, h=len);
      translate([0, 0, -20+e]) cylinder(r=m3_head_dia/2, h=20);
+     if (nut_at > 0) {
+	  translate([0, 0, nut_at]) {
+	       rotate([0, 0, 30]) cylinder(r=m3_nut_dia/2, h=m3_nut_thick, $fn=6);
+	       nut_wide=m3_nut_dia * cos(30);
+	       if (slit_nut)
+		    translate([-nut_wide/2, -m3_nut_dia/2, 0]) cube([nut_wide, m3_nut_dia/2, m3_nut_thick]);
+	  }
+     }
 }
 
 module stem_punch() {
@@ -129,7 +142,7 @@ module battery_box_punch() {
 	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, height-aa_wall-empty_space_fraction*height])
 	       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
 
-	  translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(aa_dia+1*aa_wall-m3_head_len);
+	  translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(len=aa_dia+1*aa_wall-m3_head_len, nut_at=5);
      }
 }
 
@@ -173,6 +186,14 @@ module battery_power_punch() {
      }
 }
 
+module bottom_screw_punch() {
+     screw_len=stem_high * 1.3;
+     translate([0, bottom_mount_offset, 0]) {
+	  translate([bottom_mount_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([-bottom_mount_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+     }
+}
+
 module dial_case(cable_slots=true) {
      difference() {
 	  union() {
@@ -188,13 +209,14 @@ module dial_case(cable_slots=true) {
 	       }
 	  }
 	  dial_punch(cable_slots);
+	  bottom_screw_punch();
 
 	  mount_meat = 5;  // The 'meat' before we hit the butt-surface
 	  mount_screw_len = dial_thick - dial_stem_pos + mount_meat;
 	  translate([stem_mount_screw_distance/2, -mount_meat, stem_high/2+4])
-	       rotate([-90, 0, 0]) m3_screw(mount_screw_len);
+	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len, nut_at=mount_meat+bottom_mount_offset-m3_nut_dia+m3_nut_thick);
 	  translate([-stem_mount_screw_distance/2, -mount_meat, stem_high/2+4])
-	       rotate([-90, 0, 0]) m3_screw(mount_screw_len);
+	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len, nut_at=mount_meat+bottom_mount_offset-m3_nut_dia+m3_nut_thick);
 	  translate([0, dial_thick - dial_stem_pos, 0]) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
