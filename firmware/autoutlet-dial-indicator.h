@@ -14,8 +14,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#ifndef AUTOLET_DIAL_INDICATOR_H
-#define AUTOLET_DIAL_INDICATOR_H
+#ifndef AUTOUTLET_DIAL_INDICATOR_H
+#define AUTOUTLET_DIAL_INDICATOR_H
+
+// This is for this one https://www.amazon.com/gp/product/B07C63VFN3
 
 // This is a header file that can be implemted differently depending on
 // the type of dial indicator (there might be different ways to read out
@@ -94,4 +96,4 @@ DialData ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit) {
   return result.data;
 }
 
-#endif // AUTOLET_DIAL_INDICATOR_H
+#endif // AUTOUTLET_DIAL_INDICATOR_H

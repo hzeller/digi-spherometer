@@ -37,7 +37,7 @@
 // Choose reading function of dial indicator here.
 // (only  indicator we support right now is autolet, but we could have a
 // conditional include here)
-#include "autolet-dial-indicator.h"
+#include "autoutlet-dial-indicator.h"
 
 // ------------------------------ configurable parameters ------------
 // Distance center to feet. Radius of the Spherometer-feet circle.
