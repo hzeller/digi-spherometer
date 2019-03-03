@@ -135,7 +135,7 @@ module aabat(punch=false) {
      translate([0, 0, -aa_len/2]) {
 	  cylinder(r=aa_dia/2, h=aa_len);
 	  translate([-aa_dia/2, 0, 0]) cube([aa_dia, aa_dia/2, aa_len]);
-	  rotate([0, 0, -10]) translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
+	  rotate([0, 0, -45]) translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
      }
 }
 
@@ -319,6 +319,7 @@ module demo_leg_plate() {
 	  leg_balls();
      }
 }
+
 
 if (true) {
      demo_leg_plate();
