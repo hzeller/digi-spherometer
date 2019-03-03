@@ -1,25 +1,40 @@
 // Mounting frame holding the indicator and display
 // CAVE: Super-hacky right now while exploring different shape.
-$fn=128;
-e=0.01;
+
+print_quality=true;   // print quality: high-res, but slow to render.
+$fs=print_quality ? 0.15 : 1;  // Half the size the printer can do.
+$fa=print_quality ? 1 : 6;
+
+e=0.01;             // Epsilon to reliably punch holes
 fit_tolerance=0.3;  // Tolerance of parts in contact.
 
-m3_dia=3.2;
+m3_dia=3.4;         // Let it a little loose to not overconstrain things.
 m3_head_dia=6;
 m3_head_len=3;
-m3_nut_dia=6.2;
+m3_nut_dia=5.4 / cos(30) + 2*fit_tolerance;  // div by cos(30) for outer circle
 m3_nut_thick=2.8;
+
+// Sperometer legs.
+leg_radius=50;
+leg_plate_thick=12.7;    // Thickness of the acrylic used.
+leg_ball_dia=12.7;
+leg_ball_hole_dia=8;
+leg_plate_rim=5;         // Extra acrylic beyond the legs.
+leg_plate_radius=leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
 dial_wall=2;
 dial_thick=25.2;
-dial_stem_pos = 21.4-4;  // Position of stem from the front.
+dial_stem_pos = 21.4-4;  // Position of stem from the frontface
 dial_cable_pos=12;   // Position of the cable channel from the front
 
+// Stem of the meter
 stem_dia=8;
-stem_high=21.5 - 6;   // height stem - acrylic thick
+stem_bushing_len=21.5;
+stem_high=stem_bushing_len - leg_plate_thick;
 stem_mount_screw_distance=stem_dia + 8;
 
+// Battery sizes
 aa_dia=14.5 + 2*fit_tolerance;
 aa_len=50.5 + 8;  // for contacts
 aa_wall=2;
@@ -27,12 +42,28 @@ aa_dist = 8;      // Distance between batteries
 
 base_dia=dial_stem_pos*2;
 
+display_wall_thick=1.5;
 display_wide=55;
 display_high=35;
 display_front_radius=5;
 
-bottom_mount_offset=7;  // Bottom screws. Offset from center towards the back.
-bottom_mount_distance=display_wide - 13;  // right/left distance.
+// Mounting holes, holding down the back part, the front part and the
+// display part.
+bottom_mount_front_offset=15;  // Bottom screws. Offset from center to back.
+bottom_mount_front_distance=display_wide - 8;  // right/left distance.
+
+bottom_mount_front_display_offset=display_high+base_dia/2-display_wall_thick-display_front_radius;
+bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - 2*display_front_radius;
+
+bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
+bottom_mount_back_distance=display_wide - 13;  // right/left distance.
+
+echo("back-distance: ", bottom_mount_back_distance,
+     "offset: ", -bottom_mount_back_offset);
+echo("middle-distance: ", bottom_mount_front_distance,
+     "offset: ", bottom_mount_front_offset);
+echo("display-distance: ", bottom_mount_front_display_distance,
+     "offset: ", bottom_mount_front_display_offset);
 
 // slit_nut: make a space to slide a nut in while printing.
 module m3_screw(len=60, nut_at=-1, slit_nut=false) {
@@ -67,15 +98,17 @@ module base(with_front_flat=true) {
 }
 
 module display_base() {
-     base_high=2;
-     translate([0, -base_dia/2, 0]) hull() { // Move to the front.
-	  translate([-display_wide/2+display_front_radius,
-		     -display_high+display_front_radius, 0])
+     base_high=display_wall_thick;
+     dw=display_wide - 2*display_wall_thick;
+     dh=display_high - display_wall_thick;
+     translate([0, -base_dia/2, 0]) union() { // Move to the front.
+	  translate([-dw/2+display_front_radius,
+		     -dh+display_front_radius, 0])
 	       cylinder(r=display_front_radius, h=base_high);
-	  translate([+display_wide/2-display_front_radius,
-		     -display_high+display_front_radius, 0])
+	  translate([+dw/2-display_front_radius,
+		     -dh+display_front_radius, 0])
 	       cylinder(r=display_front_radius, h=base_high);
-	  translate([-display_wide/2, 0, 0]) cube([display_wide, e, base_high]);
+	  translate([-dw/2, 0, 0]) cube([dw, e, base_high]);
      }
 }
 
@@ -104,11 +137,13 @@ module dial_punch(cable_slot=true) {
 
 module dial_holder() {
      wall_r =dial_dia/2 + dial_wall;
-     rotate([90, 0, 0])
-	  translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos])
-	  difference() {
-	  cylinder(r=wall_r, h=dial_thick);
-	  translate([-50, 20, -e]) cube([100, 100, 100]);
+     intersection() {
+	  rotate([90, 0, 0]) translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) {
+	       cylinder(r=wall_r, h=dial_thick);
+	  }
+	  battery_box_height=aa_len + 2*aa_wall;
+	  dial_top = dial_dia + stem_high + dial_wall;
+	  translate([-50, -50, 0]) cube([100, 100, min(0.8 * dial_top, battery_box_height)]);
      }
 }
 
@@ -188,9 +223,17 @@ module battery_power_punch() {
 
 module bottom_screw_punch() {
      screw_len=stem_high * 1.3;
-     translate([0, bottom_mount_offset, 0]) {
-	  translate([bottom_mount_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
-	  translate([-bottom_mount_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+     translate([0, bottom_mount_back_offset, 0]) {
+	  translate([bottom_mount_back_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([-bottom_mount_back_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+     }
+     translate([0, -bottom_mount_front_offset, 0]) {
+	  translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+     }
+     translate([0, -bottom_mount_front_display_offset, 0]) {
+	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
      }
 }
 
@@ -211,12 +254,15 @@ module dial_case(cable_slots=true) {
 	  dial_punch(cable_slots);
 	  bottom_screw_punch();
 
-	  mount_meat = 5;  // The 'meat' before we hit the butt-surface
+	  // Stem holding.
+	  mount_meat = 8;  // The 'meat' before we hit the butt-surface
 	  mount_screw_len = dial_thick - dial_stem_pos + mount_meat;
-	  translate([stem_mount_screw_distance/2, -mount_meat, stem_high/2+4])
-	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len, nut_at=mount_meat+bottom_mount_offset-m3_nut_dia+m3_nut_thick);
-	  translate([-stem_mount_screw_distance/2, -mount_meat, stem_high/2+4])
-	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len, nut_at=mount_meat+bottom_mount_offset-m3_nut_dia+m3_nut_thick);
+	  translate([stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
+	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
+					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick);
+	  translate([-stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
+	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
+					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick);
 	  translate([0, dial_thick - dial_stem_pos, 0]) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
@@ -254,6 +300,43 @@ module dial_frontend() {
      }
 }
 
-color("yellow") render() dial_backend();
-color("red") render() dial_frontend();
-color("blue") render() dial_battery_lid();
+module leg_plate() {
+     difference() {
+	  color("#f0f0ff", alpha=0.3) cylinder(r=leg_plate_radius, h=leg_plate_thick);
+	  // Hole pattern
+	  translate([0, 0, -1]) bottom_screw_punch();
+	  translate([0, 0, -e]) cylinder(r=stem_dia/2, h=leg_plate_thick+2*e);
+	  for (r = [0, 120, 240]) {
+	       rotate([0, 0, r-30])
+		    translate([leg_radius, 0, -e]) cylinder(r=leg_ball_hole_dia/2, h=leg_plate_thick+2*e);
+	  }
+     }
+}
+
+module leg_plate_2d() {  // laser cut this.
+     projection(cut=true) leg_plate();
+}
+
+module leg_balls() {
+     ball_r=leg_ball_dia/2;
+     hole_r=leg_ball_hole_dia/2;
+     pos = ball_r - sqrt(ball_r*ball_r - hole_r*hole_r);
+     for (r = [0, 120, 240]) {
+	  rotate([0, 0, r-30])
+	       color("silver") translate([leg_radius, 0, -ball_r+pos]) sphere(r=leg_ball_dia/2);
+     }
+}
+
+module demo_leg_plate() {
+     translate([0, 0, -leg_plate_thick]) {
+	  %leg_plate();
+	  leg_balls();
+     }
+}
+
+if (true) {
+     demo_leg_plate();
+     color("yellow") render() dial_backend();
+     color("red") render() dial_frontend();
+     color("blue") render() dial_battery_lid();
+}
