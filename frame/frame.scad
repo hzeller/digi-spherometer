@@ -58,13 +58,6 @@ bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - 2*disp
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
 bottom_mount_back_distance=display_wide - 13;  // right/left distance.
 
-echo("back-distance: ", bottom_mount_back_distance,
-     "offset: ", -bottom_mount_back_offset);
-echo("middle-distance: ", bottom_mount_front_distance,
-     "offset: ", bottom_mount_front_offset);
-echo("display-distance: ", bottom_mount_front_display_distance,
-     "offset: ", bottom_mount_front_display_offset);
-
 // slit_nut: make a space to slide a nut in while printing.
 module m3_screw(len=60, nut_at=-1, slit_nut=false) {
      cylinder(r=m3_dia/2, h=len);
@@ -82,7 +75,6 @@ module m3_screw(len=60, nut_at=-1, slit_nut=false) {
 module stem_punch() {
      // A little thinner in y direction to have enough 'squeeze' action.
      scale([1, 0.98, 1]) translate([0, 0, -25]) cylinder(r=stem_dia/2, h=50);
-     //translate([-stem_dia/2, -20, -e]) cube([stem_dia, 20, 50]);
 }
 
 module stem_holder() {
@@ -94,21 +86,6 @@ module base(with_front_flat=true) {
      translate([-display_wide/2, -base_dia/2, 0]) cube([display_wide, base_dia/2, 2]);
      if (with_front_flat) {
 	  translate([-display_wide/2, -base_dia/2, 0]) cube([display_wide, 1, stem_high]);
-     }
-}
-
-module display_base() {
-     base_high=display_wall_thick;
-     dw=display_wide - 2*display_wall_thick;
-     dh=display_high - display_wall_thick;
-     translate([0, -base_dia/2, 0]) union() { // Move to the front.
-	  translate([-dw/2+display_front_radius,
-		     -dh+display_front_radius, 0])
-	       cylinder(r=display_front_radius, h=base_high);
-	  translate([+dw/2-display_front_radius,
-		     -dh+display_front_radius, 0])
-	       cylinder(r=display_front_radius, h=base_high);
-	  translate([-dw/2, 0, 0]) cube([dw, e, base_high]);
      }
 }
 
@@ -246,10 +223,6 @@ module dial_case(cable_slots=true) {
 		    dial_holder();
 		    translate([0, dial_thick - dial_stem_pos, 0]) battery_box();
 	       }
-	       hull() {
-		    base(with_front_flat=false);
-		    display_base();
-	       }
 	  }
 	  dial_punch(cable_slots);
 	  bottom_screw_punch();
@@ -304,7 +277,20 @@ module leg_plate() {
      difference() {
 	  color("#f0f0ff", alpha=0.3) cylinder(r=leg_plate_radius, h=leg_plate_thick);
 	  // Hole pattern
-	  translate([0, 0, -1]) bottom_screw_punch();
+	  translate([0, bottom_mount_back_offset, -e]) {
+	       translate([bottom_mount_back_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	       translate([-bottom_mount_back_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	  }
+	  translate([0, -bottom_mount_front_offset, -e]) {
+	       translate([bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	       translate([-bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	  }
+	  translate([0, -bottom_mount_front_display_offset, -e]) {
+	       translate([bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	       translate([-bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	  }
+
+	  //translate([0, 0, -1]) bottom_screw_punch();
 	  translate([0, 0, -e]) cylinder(r=stem_dia/2, h=leg_plate_thick+2*e);
 	  for (r = [0, 120, 240]) {
 	       rotate([0, 0, r-30])
