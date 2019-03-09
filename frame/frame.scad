@@ -1,7 +1,7 @@
 // Mounting frame holding the indicator and display
 // CAVE: Super-hacky right now while exploring different shape.
 
-print_quality=true;   // print quality: high-res, but slow to render.
+print_quality=true;            // print quality: high-res, but slow to render.
 $fs=print_quality ? 0.15 : 1;  // Half the size the printer can do.
 $fa=print_quality ? 1 : 6;
 
@@ -28,9 +28,9 @@ dial_thick=25.2;
 dial_stem_pos = 21.4-4;  // Position of stem from the frontface
 dial_cable_pos=12;   // Position of the cable channel from the front
 
-// Stem of the meter
-stem_dia=8;
-stem_bushing_len=21.5;
+// Parameters from the autolet indicator
+stem_dia=8;                       // Stem of the meter
+stem_bushing_len=20;              // How long is the stem bushing
 stem_high=stem_bushing_len - leg_plate_thick;
 stem_mount_screw_distance=stem_dia + 8;
 
@@ -40,6 +40,9 @@ aa_len=50.5 + 8;  // for contacts
 aa_wall=2;
 aa_dist = 8;      // Distance between batteries
 
+// Battery box wiggle printing on the back is a challenge. Maybe this needs to
+// be split in the wiggle part and flat battery box back, that are then glued
+// together.
 battery_box_with_wiggle=true;   // Easier to print if false :)
 
 base_dia=dial_stem_pos*2;
@@ -51,7 +54,7 @@ display_front_radius=5;
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
-bottom_mount_front_offset=15;  // Bottom screws. Offset from center to back.
+bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_front_distance=display_wide - 8;  // right/left distance.
 
 bottom_mount_front_display_offset=display_high+base_dia/2-display_wall_thick-display_front_radius;
@@ -60,16 +63,22 @@ bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - 2*disp
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
 bottom_mount_back_distance=display_wide - 13;  // right/left distance.
 
-// slit_nut: make a space to slide a nut in while printing.
-module m3_screw(len=60, nut_at=-1, slit_nut=false) {
+function max(a, b) = a > b ? a : b;
+
+// m3_screw: module to punch material.
+// nut_at: star of where a m3 nut shoud be placed. -1 for off.
+// nut_channel: make a channel of given length to slide a nut in.
+module m3_screw(len=60, nut_at=-1, nut_channel=-1, nut_thick=m3_nut_thick) {
      cylinder(r=m3_dia/2, h=len);
      translate([0, 0, -20+e]) cylinder(r=m3_head_dia/2, h=20);
      if (nut_at > 0) {
 	  translate([0, 0, nut_at]) {
-	       rotate([0, 0, 30]) cylinder(r=m3_nut_dia/2, h=m3_nut_thick, $fn=6);
+	       rotate([0, 0, 30]) cylinder(r=m3_nut_dia/2, h=nut_thick, $fn=6);
 	       nut_wide=m3_nut_dia * cos(30);
-	       if (slit_nut)
-		    translate([-nut_wide/2, -m3_nut_dia/2, 0]) cube([nut_wide, m3_nut_dia/2, m3_nut_thick]);
+	       if (nut_channel > 0) {
+		    nut_channel_len = max(nut_channel, m3_nut_dia/2);
+		    translate([-nut_wide/2, -nut_channel_len, 0]) cube([nut_wide, nut_channel_len, nut_thick]);
+	       }
 	  }
      }
 }
@@ -137,7 +146,7 @@ module aabat(punch=false, straight_cut=1) {
      translate([0, 0, -aa_len/2]) {
 	  cylinder(r=aa_dia/2, h=aa_len);
 	  translate([-aa_dia/2, 0, 0]) cube([aa_dia, aa_dia/2-straight_cut, aa_len]);
-	  rotate([0, 0, -45]) translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
+	  translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
      }
 }
 
@@ -150,13 +159,13 @@ module battery_box_punch() {
 	  translate([-(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) aabat();
 	  translate([+(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) rotate([0, 180, 0]) aabat();
 
-	  empty_space_fraction=0.05;
+	  empty_space_fraction=0.0;
 	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, aa_wall])
 	       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
 	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, height-aa_wall-empty_space_fraction*height])
 	       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
 
-	  translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(len=aa_dia+1*aa_wall-m3_head_len, nut_at=5);
+	  translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(len=aa_dia+1*aa_wall-m3_head_len, nut_at=5, nut_thick=40);
      }
 }
 
@@ -222,6 +231,12 @@ module battery_box_separator(is_inside=false, lid_offset=5, depth=5,
      }
 }
 
+module sine_wiggle(tau_coverage=3, len=20, height=2, resolution=0.01) {
+     points = [ for (w = [0 : resolution : 1.0]) [ w * len, height/2 + height/2 * sin(w*tau_coverage*360-90)] ];
+     points1=concat([[0, -e]], points, [[len, -e]]);
+     translate([-len/2, 0, 0]) polygon(points1);
+}
+
 module battery_box(with_wiggle=false) {
      height=aa_len + 2*aa_wall;
      width=2*aa_dia + aa_dist + 2*aa_wall;
@@ -255,18 +270,18 @@ module battery_power_punch() {
 }
 
 module bottom_screw_punch() {
-     screw_len=stem_high * 1.3;
+     screw_len=stem_high * 2.3;
      translate([0, bottom_mount_back_offset, 0]) {
-	  translate([bottom_mount_back_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
-	  translate([-bottom_mount_back_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 360 - 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=15);
+	  translate([-bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=15);
      }
      translate([0, -bottom_mount_front_offset, 0]) {
-	  translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
-	  translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
+	  translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
      }
      translate([0, -bottom_mount_front_display_offset, 0]) {
-	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
-	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, slit_nut=true);
+	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high);
+	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high);
      }
 }
 
@@ -284,15 +299,15 @@ module dial_case(cable_slots=true) {
 	  dial_punch(cable_slots);
 	  bottom_screw_punch();
 
-	  // Stem holding.
+	  // Stem holding. This should be a separate module.
 	  mount_meat = 8;  // The 'meat' before we hit the butt-surface
-	  mount_screw_len = dial_thick - dial_stem_pos + mount_meat;
+	  mount_screw_len = dial_thick - dial_stem_pos + mount_meat + aa_wall/2;
 	  translate([stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
 	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
-					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick);
+					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick, nut_channel=2*stem_high);
 	  translate([-stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
 	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
-					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick);
+					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick, nut_channel=2*stem_high);
 	  translate([0, dial_thick - dial_stem_pos, 0]) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
@@ -379,13 +394,8 @@ module demo_leg_plate() {
      }
 }
 
-module sine_wiggle(tau_coverage=3, len=20, height=2, resolution=0.01) {
-     points = [ for (w = [0 : resolution : 1.0]) [ w * len, height/2 + height/2 * sin(w*tau_coverage*360-90)] ];
-     points1=concat([[0, -e]], points, [[len, -e]]);
-     translate([-len/2, 0, 0]) polygon(points1);
-}
-
+// Assemble to see how that looks.
 demo_leg_plate();
 color("red") render() dial_frontend();
 color("yellow") render() dial_backend();
-color("blue") translate([0, 0*20, 0]) render() dial_battery_lid();
+color("blue") translate([0, 1*20, 0]) render() dial_battery_lid();

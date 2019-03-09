@@ -39,7 +39,7 @@ batteries is still work in progress.
 
 #### First prototype with rough mounting frame outline
 ![](img/spherometer-prototype.jpg)
-![](img/dial-case.png)
+[![](img/dial-case.png)](./frame)
 
 [attiny85]: https://www.microchip.com/wwwproducts/en/ATtiny85
 [ssd1306]: https://www.ebay.com/sch/i.html?_nkw=ssd1306+i2c+128x64
