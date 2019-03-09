@@ -34,9 +34,6 @@ The [firmware](./firmware) can be compiled with an [avr-gcc].
 The [frame](./frame) to hold the dial indicator, microcontroller+display and
 batteries is still work in progress.
 
-#### Developing on breadboard
-![](img/spherometer-devel.jpg)
-
 #### First prototype with rough mounting frame outline
 ![](img/spherometer-prototype.jpg)
 [![](img/dial-case.png)](./frame)

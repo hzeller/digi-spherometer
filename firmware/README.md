@@ -62,6 +62,8 @@ Then, pushing new code to the ATTiny is as simple as
 make flash
 ```
 
+![](../img/spherometer-devel.jpg)
+
 [attiny85]: https://www.microchip.com/wwwproducts/en/ATtiny85
 [ssd1306 screen]: https://www.ebay.com/sch/i.html?_nkw=ssd1306+i2c+128x64
 [Plane 0]: https://en.wikipedia.org/wiki/Plane_(Unicode)#Basic_Multilingual_Plane
