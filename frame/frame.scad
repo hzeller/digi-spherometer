@@ -61,6 +61,7 @@ display_front_radius=5;
 // Mounting holes, holding down the back part, the front part and the
 // display part.
 bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
+bottom_mount_center_offset=bottom_mount_front_offset + 0;
 bottom_mount_front_distance=display_wide - 8;  // right/left distance.
 
 bottom_mount_front_display_offset=display_high+base_dia/2-display_wall_thick-display_front_radius;
@@ -295,8 +296,8 @@ module bottom_screw_punch() {
      translate([0, -bottom_mount_front_offset, 0]) {
 	  translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
 	  translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
-	  translate([0, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
      }
+     translate([0, -bottom_mount_center_offset, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
 
      // Very front to hold down display.
      translate([0, -bottom_mount_front_display_offset, 0]) {
@@ -376,6 +377,7 @@ module dial_frontend() {
 module leg_plate() {
      difference() {
 	  color("#f0f0ff", alpha=0.3) cylinder(r=leg_plate_radius, h=leg_plate_thick);
+	  // TODO: make hole pattern here and bottom_screw_punch()
 	  // Hole pattern
 	  translate([0, bottom_mount_back_offset, -e]) {
 	       translate([bottom_mount_back_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
@@ -385,6 +387,7 @@ module leg_plate() {
 	       translate([bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	       translate([-bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	  }
+	  translate([0, -bottom_mount_center_offset, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	  translate([0, -bottom_mount_front_display_offset, -e]) {
 	       translate([bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	       translate([-bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
