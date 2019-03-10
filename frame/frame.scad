@@ -37,13 +37,14 @@ stem_mount_screw_distance=stem_dia + 8;
 // Battery sizes
 aa_dia=14.5 + 2*fit_tolerance;
 aa_len=50.5 + 8;  // for contacts
-aa_wall=2;
+aa_wall=3;
 aa_dist = 8;      // Distance between batteries
 
 // Battery box wiggle printing on the back is a challenge. Maybe this needs to
 // be split in the wiggle part and flat battery box back, that are then glued
 // together.
 battery_box_with_wiggle=true;   // Easier to print if false :)
+battery_box_rim_deep=1.5;       // Alignment rim
 
 base_dia=dial_stem_pos*2;
 
@@ -135,10 +136,17 @@ module dial_holder() {
      }
 }
 
-module aa_punch() {
-     color("red") {
-	  translate([0, -aa_len*0.25-8, -3+0.5]) linear_extrude(height=3) text("–", halign="center");
-	  translate([0, aa_len*0.25, -3+0.5]) linear_extrude(height=3) text("+", halign="center");
+module aa_punch(h=3) {
+     translate([0, 0, -h+0.5]) color("red") {
+	  translate([0, -aa_len*0.25-8, 0]) linear_extrude(height=h) text("–", halign="center");
+	  translate([0, aa_len*0.25, 0]) linear_extrude(height=h) text("+", halign="center");
+	  translate([0, 0, h/2]) difference() {
+	       union() {
+		    cube([6, 20, h], center=true);
+		    translate([0, 10, 0]) cube([3, 4, h], center=true);
+	       }
+	       cube([6-2, 20-2, h+2*e], center=true);
+	  }
      }
 }
 
@@ -199,7 +207,7 @@ module battery_box_separator_block(lid_offset, depth,
 
 module battery_box_separator(is_inside=false, lid_offset=5, depth=5,
 			     slope_top=1.3, slope_bottom=2.3,
-			     align_rim_deep=1) {
+			     align_rim_deep=battery_box_rim_deep) {
      behind_cut=lid_offset + 10;
      inner_width=2*aa_dia + aa_dist;
      inner_height=aa_len;
@@ -395,7 +403,9 @@ module demo_leg_plate() {
 }
 
 // Assemble to see how that looks.
-demo_leg_plate();
-color("red") render() dial_frontend();
-color("yellow") render() dial_backend();
-color("blue") translate([0, 1*20, 0]) render() dial_battery_lid();
+if (true) {
+     demo_leg_plate();
+     color("red") render() dial_frontend();
+     color("yellow") render() dial_backend();
+     color("blue") translate([0, 1*20, 0]) render() dial_battery_lid();
+}
