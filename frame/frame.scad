@@ -1,12 +1,17 @@
 // Mounting frame holding the indicator and display
 // CAVE: Super-hacky right now while exploring different shape.
 
-print_quality=true;            // print quality: high-res, but slow to render.
+// The following variables are set in the makefile.
+print_quality=false;      // print quality: high-res, but slow to render.
+version_id="<version>";   // Identify version for easier re-print
+version_date="<date>";    // .. and date of that version.
+
 $fs=print_quality ? 0.15 : 1;  // Half the size the printer can do.
 $fa=print_quality ? 1 : 6;
 
 e=0.01;             // Epsilon to reliably punch holes
 fit_tolerance=0.3;  // Tolerance of parts in contact.
+
 
 m3_dia=3.4;         // Let it a little loose to not overconstrain things.
 m3_head_dia=6;
@@ -327,12 +332,17 @@ module dial_case(cable_slots=true) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
 	  }
+
+	  scale([-1, 1, 1]) translate([0, stem_dia/2+2, 0]) linear_extrude(height=0.5) text(version_id, halign="center", size=5);
+	  scale([-1, 1, 1]) translate([0, stem_dia/2+2+6, 0]) linear_extrude(height=0.5) text(version_date, halign="center", size=5);
+	  scale([-1, 1, 1]) translate([0, stem_dia/2+2+6+6, 0]) linear_extrude(height=0.5) text("©Henner Zeller", halign="center", size=4);
      }
 }
 
 // Separating behind and front of dial.
-module dial_separator() {
-     w=32;  // TODO: calculate from other values.
+module dial_separator(is_inside=false) {
+     // TODO: calculate base-width from other values.
+     w=32 - (is_inside ? 2*fit_tolerance : 0);
      translate([-w/2, -100, -e]) cube([w, 100, stem_high+dial_wall+8]);
 }
 
@@ -350,7 +360,7 @@ module dial_battery_lid() {
 module dial_backend() {
      difference() {
 	  dial_case();
-	  dial_separator();
+	  dial_separator(is_inside=false);
 	  translate([0, dial_thick - dial_stem_pos, 0])
 	       battery_box_separator(is_inside=false);
      }
@@ -359,7 +369,7 @@ module dial_backend() {
 module dial_frontend() {
      intersection() {
 	  dial_case();
-	  translate([0, -fit_tolerance, -fit_tolerance]) dial_separator();
+	  translate([0, -fit_tolerance, -fit_tolerance]) dial_separator(is_inside=true);
      }
 }
 
