@@ -279,14 +279,21 @@ module battery_power_punch() {
 
 module bottom_screw_punch() {
      screw_len=stem_high * 2.3;
+
+     // Back
      translate([0, bottom_mount_back_offset, 0]) {
 	  translate([bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 360 - 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=15);
 	  translate([-bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=15);
      }
+
+     // Front
      translate([0, -bottom_mount_front_offset, 0]) {
 	  translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
 	  translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
+	  translate([0, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
      }
+
+     // Very front to hold down display.
      translate([0, -bottom_mount_front_display_offset, 0]) {
 	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high);
 	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high);
@@ -325,7 +332,8 @@ module dial_case(cable_slots=true) {
 
 // Separating behind and front of dial.
 module dial_separator() {
-     translate([-50, -100, -e]) cube([100, 100, stem_high+dial_wall+8]);
+     w=32;  // TODO: calculate from other values.
+     translate([-w/2, -100, -e]) cube([w, 100, stem_high+dial_wall+8]);
 }
 
 module dial_battery_lid() {
