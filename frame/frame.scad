@@ -387,7 +387,7 @@ module leg_plate() {
 	       translate([bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	       translate([-bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	  }
-	  translate([0, -bottom_mount_center_offset, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+	  translate([0, -bottom_mount_center_offset, -e]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	  translate([0, -bottom_mount_front_display_offset, -e]) {
 	       translate([bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	       translate([-bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
