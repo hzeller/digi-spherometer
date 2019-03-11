@@ -99,6 +99,7 @@ module stem_holder() {
      cylinder(r=stem_dia/2 + 4, h=stem_high);
 }
 
+// Base where everything is sitting on the bottom.
 module base(with_front_flat=true) {
      scale([1, 1, 1]) cylinder(r=base_dia/2, h=0.8);
      translate([-display_wide/2, -base_dia/2, 0]) cube([display_wide, base_dia/2, 2]);
@@ -118,7 +119,8 @@ module dial_punch(cable_slot=true) {
 	  cylinder(r=dial_dia/2, h=dial_thick+extra);
 
 	  // Punch for cable management. Angled, so that it is FDM printable.
-	  translate([0, 0, dial_thick-dial_cable_pos]) difference() {
+	  // TODO: this wire should go down the back.
+	  if (false) translate([0, 0, dial_thick-dial_cable_pos]) difference() {
 	       cylinder(r1=dial_dia/2+cable_management_channel,
 			r2=dial_dia/2, h=dial_cable_pos);
 	       translate([-50+stem_dia, 0, 0]) cube([100, 100, 100], center=true);
@@ -138,7 +140,9 @@ module dial_holder() {
 	  }
 	  battery_box_height=aa_len + 2*aa_wall;
 	  dial_top = dial_dia + stem_high + dial_wall;
-	  translate([-50, -50, 0]) cube([100, 100, min(0.8 * dial_top, battery_box_height)]);
+	  translate([-50, -50, 0]) cube([100, 100, min(0.9 * dial_top, battery_box_height)]);
+	  // TODO: vertical cut to the top instead ? The sharp edge does
+	  // not look very printable and looks a bit odd.
      }
 }
 
@@ -257,8 +261,12 @@ module battery_box(with_wiggle=false) {
      thick=aa_dia+2*aa_wall;
      difference() {
 	  union() {
-	       translate([0, thick/2, 0])  translate([-width/2, -thick/2, 0])
-		    cube([width, thick, height]);
+	       cc=2;  // Champfer on top.
+	       rotate([90, 0, 0]) translate([-width/2, 0, -thick])
+		    linear_extrude(height=thick)
+		    polygon([[0, 0], [0, height-cc], [cc, height],
+			     [width-cc, height], [width, height-cc],
+			     [width, 0]]);
 	       if (with_wiggle) {
 		    translate([-width/2, thick, height/2]) rotate([0, 90, 0])
 			 linear_extrude(height=width, convexity=10) sine_wiggle(len=height);
