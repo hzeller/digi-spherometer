@@ -12,7 +12,6 @@ $fa=print_quality ? 1 : 6;
 e=0.01;             // Epsilon to reliably punch holes
 fit_tolerance=0.3;  // Tolerance of parts in contact.
 
-
 m3_dia=3.4;         // Let it a little loose to not overconstrain things.
 m3_head_dia=6;
 m3_head_len=3;
@@ -28,15 +27,15 @@ leg_plate_rim=5;         // Extra acrylic beyond the legs.
 leg_plate_radius=leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
-dial_wall=2;
+dial_wall=2.5;
 dial_thick=25.2;
 dial_stem_pos = 21.4-4;  // Position of stem from the frontface
 dial_cable_pos=12;   // Position of the cable channel from the front
 
 // Parameters from the autolet indicator
 stem_dia=8;                       // Stem of the meter
-stem_bushing_len=20;              // How long is the stem bushing
-stem_high=stem_bushing_len - leg_plate_thick;
+stem_bushing_len=21.5;            // How long is the stem bushing
+stem_high=stem_bushing_len - leg_plate_thick - dial_wall;
 stem_mount_screw_distance=stem_dia + 8;
 
 // Battery sizes
@@ -112,24 +111,33 @@ module dial_punch(cable_slot=true) {
      extra=40;
      cable_management_channel=dial_wall/2;
      wall_r =dial_dia/2 + dial_wall;
+     connector_wide=7;
+     connector_from_top=13;
+
+     connector_angle_from_top=90
+	  + 360 * (-connector_wide - connector_from_top) / (dial_dia * PI);
+     connector_angle_width=360 * connector_wide / (dial_dia * PI);
+     cable_thick=1.5;   // Thickness of the data cables.
      rotate([90, 0, 0])
 	  translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) {
 
 	  // The dial. With extra punch to the front.
 	  cylinder(r=dial_dia/2, h=dial_thick+extra);
 
-	  // Punch for cable management. Angled, so that it is FDM printable.
-	  // TODO: this wire should go down the back.
-	  if (false) translate([0, 0, dial_thick-dial_cable_pos]) difference() {
-	       cylinder(r1=dial_dia/2+cable_management_channel,
-			r2=dial_dia/2, h=dial_cable_pos);
-	       translate([-50+stem_dia, 0, 0]) cube([100, 100, 100], center=true);
-	  }
+	  top_punch=0.8 * (connector_wide+connector_from_top);
+	  translate([-top_punch,0, 0]) cube([2*top_punch, dial_dia, dial_thick]);
      }
      stem_punch();
 
-     // More punch for cable management: lead it out in a slot
-     if (cable_slot) translate([stem_mount_screw_distance, -dial_stem_pos-1, dial_wall+stem_high/2]) cube([3, dial_cable_pos+1, stem_high+10]);
+     // More punch for cable management: lead it out on the back into the slot
+     if (cable_slot) color("red") hull() {
+	       bottom_wide=connector_wide * 0.8;
+	       translate([stem_mount_screw_distance, -dial_stem_pos-e, dial_wall+stem_high/2]) cube([3, 1, stem_high+10]);
+	       translate([stem_mount_screw_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, cable_thick, cable_thick]);
+	       rotate([90, 0, 0])
+		    translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos])
+		    translate([0, 0, -cable_thick]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([cable_thick, dial_thick+cable_thick]);
+	  }
 }
 
 module dial_holder() {
