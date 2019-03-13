@@ -53,7 +53,7 @@ stem_mount_screw_distance=stem_dia + 8;
 
 // Battery sizes
 aa_dia=14.5 + 2*fit_tolerance;
-aa_len=50.5 + 8;  // for contacts
+aa_len=50.5 + 7;  // for contacts
 aa_wall=3;
 aa_dist = 8;      // Distance between batteries
 
@@ -182,7 +182,7 @@ module aa_punch(h=3) {
      }
 }
 
-module aabat(punch=false, straight_cut=1) {
+module aabat(punch=false, straight_cut=3) {
      translate([0, 0, -aa_len/2]) {
 	  cylinder(r=aa_dia/2, h=aa_len);
 	  translate([-aa_dia/2, 0, 0]) cube([aa_dia, aa_dia/2-straight_cut, aa_len]);
@@ -199,6 +199,8 @@ module battery_box_punch() {
 	  translate([-(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) aabat();
 	  translate([+(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) rotate([0, 180, 0]) aabat();
 
+	  // Cable for 1.5V tap.
+	  translate([-(aa_dist+aa_dia)/2, 0, 0]) rotate([0, 0, -45]) translate([aa_dia/2, 0, aa_wall]) cylinder(r=dial_cable_thick/2, h=aa_len);
 	  empty_space_fraction=0.0;
 	  translate([-(aa_dia+aa_dist)/2, -aa_dia/2, aa_wall])
 	       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
