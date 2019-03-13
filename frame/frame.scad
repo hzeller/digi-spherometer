@@ -102,6 +102,11 @@ module m3_screw(len=60, nut_at=-1, nut_channel=-1, nut_thick=m3_nut_thick) {
      }
 }
 
+module cos_block(a=[10,10,10]) {
+     p = [ for (x = [-180:1:180]) [ x/180, cos(x)/2] ];
+     linear_extrude(height=a[2]) scale(a) polygon(p);
+}
+
 module stem_punch() {
      // A little thinner in y direction to have enough 'squeeze' action.
      scale([1, 0.98, 1]) translate([0, 0, -25]) cylinder(r=stem_dia/2, h=50);
@@ -147,8 +152,8 @@ module dial_punch(cable_slot=true) {
 	  translate([-7, 12, -0.5]) version_punch(0.5);
 
 	  // Leave the top free.
-	  top_punch=connector_from_top;
-	  translate([-top_punch,0, 0]) cube([2*top_punch, dial_dia, dial_thick]);
+	  top_punch=0.9*connector_from_top;
+	  translate([0,0,0]) rotate([-90, 0, 0]) translate([0, -dial_thick/2, 0]) cos_block([2*top_punch, dial_thick, dial_dia]);
      }
      stem_punch();
 
