@@ -1,11 +1,23 @@
 // Mounting frame holding the indicator and display
 // CAVE: Super-hacky right now while exploring different shape.
+//
+// Rough nomenclature:
+// Parts often come in two modules: foo() and foo_punch(). foo() defines the
+// outer size, while foo_punch() the negative space. They are separate as often
+// negative spaces are applied after part is built up.
+//
+// Some parts also come with a foo_separator(). This defines some cut through
+// a part (somtimes with a complicated shape), which separates a larger
+// part using a difference() into one half and intersection() to the other half.
+// Often fit_tolerance plays a role her as well.
+
 
 // The following variables are set in the makefile.
 print_quality=false;      // print quality: high-res, but slow to render.
 version_id="git-hash";    // Identify version for easier re-print
 version_date="git-date";  // .. and date of that version.
 
+// Either fast or pretty.
 $fs=print_quality ? 0.15 : 1;  // Half the size the printer can do.
 $fa=print_quality ? 1 : 6;
 
@@ -48,8 +60,8 @@ aa_dist = 8;      // Distance between batteries
 // Battery box wiggle printing on the back is a challenge. Maybe this needs to
 // be split in the wiggle part and flat battery box back, that are then glued
 // together.
-battery_box_with_wiggle=true;   // Easier to print if false :)
-battery_box_rim_deep=1.5;       // Alignment rim
+battery_box_with_wiggle=false;   // Easier to print if false :)
+battery_box_rim_deep=1.5;       // Alignment rim all around battery box.
 
 base_dia=dial_stem_pos*2;
 
@@ -226,7 +238,7 @@ module battery_box_separator_block(lid_offset, depth,
 }
 
 module battery_box_separator(is_inside=false, lid_offset=5, depth=5,
-			     slope_top=1.3, slope_bottom=2.3,
+			     slope_top=1.1, slope_bottom=2.3,
 			     align_rim_deep=battery_box_rim_deep) {
      behind_cut=lid_offset + 10;
      inner_width=2*aa_dia + aa_dist;
@@ -253,7 +265,7 @@ module battery_box_separator(is_inside=false, lid_offset=5, depth=5,
 						     aa_wall/2+(is_inside ? fit_tolerance/2 : -fit_tolerance/2));
 	       }
 
-	       translate([0, 0, 0])
+	       translate([0, -battery_box_rim_deep, 0])
 		    translate([-keepout_inner_width/2, -keepout_inner_thick, aa_wall+e]) cube([keepout_inner_width, keepout_inner_thick, keepout_inner_height]);
 	  }
      }
