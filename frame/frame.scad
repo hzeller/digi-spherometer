@@ -3,8 +3,8 @@
 
 // The following variables are set in the makefile.
 print_quality=false;      // print quality: high-res, but slow to render.
-version_id="<version>";   // Identify version for easier re-print
-version_date="<date>";    // .. and date of that version.
+version_id="git-hash";    // Identify version for easier re-print
+version_date="git-date";  // .. and date of that version.
 
 $fs=print_quality ? 0.15 : 1;  // Half the size the printer can do.
 $fa=print_quality ? 1 : 6;
@@ -27,7 +27,8 @@ leg_plate_rim=5;         // Extra acrylic beyond the legs.
 leg_plate_radius=leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
-dial_wall=2.5;
+dial_cable_thick=1.5;   // Thickness of the data cables.
+dial_wall=dial_cable_thick+1;
 dial_thick=25.2;
 dial_stem_pos = 21.4-4;  // Position of stem from the frontface
 dial_cable_pos=12;   // Position of the cable channel from the front
@@ -107,6 +108,15 @@ module base(with_front_flat=true) {
      }
 }
 
+module version_punch(thick=1) {
+     fs=5;
+     color("red") linear_extrude(height=thick) {
+	  text("© H. Zeller", halign="center", size=fs);
+	  translate([0, -1*(fs+1)]) text(version_date, halign="center", size=fs);
+	  translate([0, -2*(fs+1)]) text(version_id, halign="center", size=fs);
+     }
+}
+
 module dial_punch(cable_slot=true) {
      extra=40;
      cable_management_channel=dial_wall/2;
@@ -117,14 +127,15 @@ module dial_punch(cable_slot=true) {
      connector_angle_from_top=90
 	  + 360 * (-connector_wide - connector_from_top) / (dial_dia * PI);
      connector_angle_width=360 * connector_wide / (dial_dia * PI);
-     cable_thick=1.5;   // Thickness of the data cables.
      rotate([90, 0, 0])
 	  translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) {
 
 	  // The dial. With extra punch to the front.
 	  cylinder(r=dial_dia/2, h=dial_thick+extra);
+	  translate([-7, 12, -0.5]) version_punch(0.5);
 
-	  top_punch=0.8 * (connector_wide+connector_from_top);
+	  // Leave the top free.
+	  top_punch=connector_from_top;
 	  translate([-top_punch,0, 0]) cube([2*top_punch, dial_dia, dial_thick]);
      }
      stem_punch();
@@ -133,25 +144,16 @@ module dial_punch(cable_slot=true) {
      if (cable_slot) color("red") hull() {
 	       bottom_wide=connector_wide * 0.8;
 	       translate([stem_mount_screw_distance, -dial_stem_pos-e, dial_wall+stem_high/2]) cube([3, 1, stem_high+10]);
-	       translate([stem_mount_screw_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, cable_thick, cable_thick]);
+	       translate([stem_mount_screw_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, dial_cable_thick, dial_cable_thick]);
 	       rotate([90, 0, 0])
 		    translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos])
-		    translate([0, 0, -cable_thick]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([cable_thick, dial_thick+cable_thick]);
+		    translate([0, 0, -dial_cable_thick]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([dial_cable_thick, dial_thick+dial_cable_thick]);
 	  }
 }
 
 module dial_holder() {
      wall_r =dial_dia/2 + dial_wall;
-     intersection() {
-	  rotate([90, 0, 0]) translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) {
-	       cylinder(r=wall_r, h=dial_thick);
-	  }
-	  battery_box_height=aa_len + 2*aa_wall;
-	  dial_top = dial_dia + stem_high + dial_wall;
-	  translate([-50, -50, 0]) cube([100, 100, min(0.9 * dial_top, battery_box_height)]);
-	  // TODO: vertical cut to the top instead ? The sharp edge does
-	  // not look very printable and looks a bit odd.
-     }
+     rotate([90, 0, 0]) translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) cylinder(r=wall_r, h=dial_thick);
 }
 
 module aa_punch(h=3) {
@@ -349,10 +351,6 @@ module dial_case(cable_slots=true) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
 	  }
-
-	  scale([-1, 1, 1]) translate([0, stem_dia/2+2, 0]) linear_extrude(height=0.5) text(version_id, halign="center", size=5);
-	  scale([-1, 1, 1]) translate([0, stem_dia/2+2+6, 0]) linear_extrude(height=0.5) text(version_date, halign="center", size=5);
-	  scale([-1, 1, 1]) translate([0, stem_dia/2+2+6+6, 0]) linear_extrude(height=0.5) text("©Henner Zeller", halign="center", size=4);
      }
 }
 
