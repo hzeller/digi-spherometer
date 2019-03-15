@@ -1,5 +1,6 @@
 // Mounting frame holding the indicator and display
-// CAVE: Super-hacky right now while exploring different shape.
+// CAVE: Super-hacky right now while exploring different shape ideas.
+// Now that it is more clean: need some clean-up.
 //
 // Rough nomenclature:
 // Parts often come in two modules: foo() and foo_punch(). foo() defines the
@@ -69,6 +70,7 @@ display_wall_thick=1.5;
 display_wide=55;
 display_high=35;
 display_front_radius=5;
+display_box_thick=stem_high+dial_wall+3;
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
@@ -151,7 +153,7 @@ module dial_punch(cable_slot=true) {
 	  cylinder(r=dial_dia/2, h=dial_thick+extra);
 	  translate([-7, 12, -0.5]) version_punch(0.5);
 
-	  // Leave the top free.
+	  // Leave the top free. We punch out a nice cosine-shaped wobble
 	  top_punch=0.9*connector_from_top;
 	  translate([0,0,0]) rotate([-90, 0, 0]) translate([0, -dial_thick/2, 0]) cos_block([2*top_punch, dial_thick, dial_dia]);
      }
@@ -334,13 +336,9 @@ module bottom_screw_punch() {
 	  translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
 	  translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
      }
-     translate([0, -bottom_mount_center_offset, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
 
-     // Very front to hold down display.
-     translate([0, -bottom_mount_front_display_offset, 0]) {
-	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high);
-	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high);
-     }
+     // Center hole.
+     translate([0, -bottom_mount_center_offset, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
 }
 
 module dial_case(cable_slots=true) {
@@ -456,10 +454,89 @@ module demo_leg_plate() {
      }
 }
 
+module front_block() {
+     intersection() {
+	  dial_case(cable_slots=false);
+	  w=e;
+	  h=stem_high+dial_dia;
+	  dd=base_dia/2;
+	  translate([-50, -dd, -e]) cube([100, w, stem_high+dial_wall+8]);
+     }
+}
+
+module display_top_block() {
+     transition=10;  // Transition until we're flat in the front.
+     translate([-display_wide/2, -base_dia/2-transition, 0]) cube([display_wide, transition, display_box_thick]);
+}
+
+module display_transition_block() {
+     slice=0.25;        // size of block slice.
+     for (i = [-display_wide/2:slice:display_wide/2]) {
+	  hull() intersection() {
+	       translate([i, 0, 0]) cube([slice, 100, 100], center=true);
+	       union() {
+		    front_block();
+		    display_top_block();
+	       }
+	  }
+     }
+}
+
+module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
+     a=0.1;
+     cube([a, a, a]);
+     translate([0, side_y, height]) cube([a, a, a]);
+     translate([side_x, 0, height]) cube([a, a, a]);
+}
+
+module display_case() {
+     in_front_of_screws=4.5;
+     hull() {
+	  display_top_block();
+	  translate([-display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) champfer_point_cloud();
+	  translate([display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) scale([-1, 1, 1]) champfer_point_cloud();
+     }
+     nut_wide=m3_nut_dia * cos(30) - 2*fit_tolerance;
+     for (offset = [-bottom_mount_front_distance/2, bottom_mount_front_distance/2]) {
+	  translate([-nut_wide/2 + offset, -base_dia/2-e, stem_high+fit_tolerance]) cube([nut_wide, 3, m3_nut_thick-2*fit_tolerance]);
+     }
+}
+
+module display_punch() {
+     translate([0, -base_dia/2-1, 9]) pcb();
+     // Very front to hold down display.
+     translate([0, -bottom_mount_front_display_offset, 0]) {
+	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-2, nut_at=display_box_thick/5);
+	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-2, nut_at=display_box_thick/5);
+     }
+}
+
+module display_part() {
+     difference() {
+	  union() {
+	       display_transition_block();
+	       display_case();
+	  }
+	  display_punch();
+	  translate([stem_mount_screw_distance, -30, -e]) cube([3, 31, 8]);
+	  translate([-stem_mount_screw_distance-1.5, -30, -e]) cube([3, 31, 8]);
+     }
+}
+
+module pcb() {
+     extra=0.5;
+     w=42+2*extra;
+     h=29+2*extra;
+     translate([-w/2, -h, -15+2]) cube([w, h, 15]);
+     translate([-w/2+extra, -h+extra+5, 0]) color("blue") cube([28, 16, 10]);
+     translate([w/2-extra-6, -16, 0]) cylinder(r=8/2, h=10);
+}
+
 // Assemble to see how that looks.
 if (true) {
      demo_leg_plate();
      color("red") render() dial_frontend();
      color("yellow") render() dial_backend();
      color("blue") translate([0, 1*20, 0]) render() dial_battery_lid();
+     color("gray") translate([0, -10, 0]) render() display_part();
 }

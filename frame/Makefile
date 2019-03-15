@@ -1,5 +1,5 @@
 TARGETS=frame-generated-dial_frontend.stl frame-generated-dial_backend.stl \
-        frame-generated-dial_battery_lid.stl \
+        frame-generated-dial_battery_lid.stl frame-generated-display_part.stl \
 	frame-generated-leg_plate_2d.dxf
 
 GIT_HASH=$(shell git log --date=short --pretty=format:'%h' -n 1 frame.scad)
