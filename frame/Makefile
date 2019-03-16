@@ -1,6 +1,9 @@
-TARGETS=frame-generated-dial_frontend.stl frame-generated-dial_backend.stl \
-        frame-generated-dial_battery_lid.stl frame-generated-display_part.stl \
-	frame-generated-leg_plate_2d.dxf
+TARGETS=fab/spherometer_frame_main_block.stl \
+        fab/spherometer_frame_stem_squeeze_block.stl \
+        fab/spherometer_frame_battery_lid.stl \
+        fab/display_part.stl \
+        fab/leg_plate_2d.dxf
+
 
 GIT_HASH=$(shell git log --date=short --pretty=format:'%h' -n 1 frame.scad)
 GIT_DATE=$(shell git log --date=short --pretty=format:'%cd' -n 1 frame.scad)
@@ -14,7 +17,8 @@ all: $(TARGETS)
 %.dxf: %.scad
 	openscad -o $@ $^
 
-frame-generated-%.scad : frame.scad
+fab/%.scad : frame.scad
+	mkdir -p fab
 	echo "use <frame.scad>; $*();" > $@
 
 clean:

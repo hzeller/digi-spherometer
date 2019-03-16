@@ -3,18 +3,21 @@
 // Now that it is more clean: need some clean-up.
 //
 // Rough nomenclature:
+// Something called 'punch' is a negative space.
+//
 // Parts often come in two modules: foo() and foo_punch(). foo() defines the
 // outer size, while foo_punch() the negative space. They are separate as often
-// negative spaces are applied after part is built up.
+// negative spaces are applied after part is built up (e.g. you want to have
+// screw holes punch through all assembled parts).
 //
 // Some parts also come with a foo_separator(). This defines some cut through
-// a part (somtimes with a complicated shape), which separates a larger
+// a part (somtimes with a complicated shape), which can separate a larger
 // part using a difference() into one half and intersection() to the other half.
 // Often fit_tolerance plays a role her as well.
 
 
 // The following variables are set in the makefile.
-print_quality=false;      // print quality: high-res, but slow to render.
+print_quality=true;      // print quality: high-res, but slow to render.
 version_id="git-hash";    // Identify version for easier re-print
 version_date="git-date";  // .. and date of that version.
 
@@ -46,11 +49,12 @@ dial_thick=25.2;
 dial_stem_pos = 21.4-4;  // Position of stem from the frontface
 dial_cable_pos=12;   // Position of the cable channel from the front
 
-// Parameters from the autolet indicator
+// Stem of the indicator, the bushing the measuring-rod is moving in.
+// Parameters from the autolet indicator.
 stem_dia=8;                       // Stem of the meter
 stem_bushing_len=21.5;            // How long is the stem bushing
 stem_high=stem_bushing_len - leg_plate_thick - dial_wall;
-stem_mount_screw_distance=stem_dia + 8;
+stem_mount_screw_distance=stem_dia + 8;  // Close for good clamp action.
 
 // Battery sizes
 aa_dia=14.5 + 2*fit_tolerance;
@@ -61,38 +65,42 @@ aa_dist = 8;      // Distance between batteries
 // Battery box wiggle printing on the back is a challenge. Maybe this needs to
 // be split in the wiggle part and flat battery box back, that are then glued
 // together.
-battery_box_with_wiggle=false;   // Easier to print if false :)
+battery_box_with_wiggle=true;   // Easier to print if false :)
 battery_box_rim_deep=1.5;       // Alignment rim all around battery box.
 
 base_dia=dial_stem_pos*2;
 
+// TODO: not all these parameters are properly honored
 display_wall_thick=1.5;
 display_wide=55;
 display_high=35;
-display_front_radius=5;
 display_box_thick=stem_high+dial_wall+3;
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
+// TODO: Naming of these is confusing.
 bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_center_offset=bottom_mount_front_offset + 0;
 bottom_mount_front_distance=display_wide - 8;  // right/left distance.
 
-bottom_mount_front_display_offset=display_high+base_dia/2-display_wall_thick-display_front_radius;
-bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - 2*display_front_radius;
+bottom_mount_front_display_offset=display_high+base_dia/2-display_wall_thick-m3_nut_dia;
+bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - m3_nut_dia;
 
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
 bottom_mount_back_distance=display_wide - 13;  // right/left distance.
 
 function max(a, b) = a > b ? a : b;
 
-// m3_screw: module to punch material.
-// nut_at: star of where a m3 nut shoud be placed. -1 for off.
+// m3_screw space occupied by a M3 screw with optional nut and
+// nut-access channel. Screw is centered around the Z-axis, with the
+// screw in the positive and screw-head in the negative range.
+// nut_at: start of where a m3 nut shoud be placed. -1 for off.
 // nut_channel: make a channel of given length to slide a nut in.
+//              nut channel extends in negative Y direction. Rotate as needed.
 module m3_screw(len=60, nut_at=-1, nut_channel=-1, nut_thick=m3_nut_thick) {
      cylinder(r=m3_dia/2, h=len);
      translate([0, 0, -20+e]) cylinder(r=m3_head_dia/2, h=20);
-     if (nut_at > 0) {
+     if (nut_at >= 0) {
 	  translate([0, 0, nut_at]) {
 	       rotate([0, 0, 30]) cylinder(r=m3_nut_dia/2, h=nut_thick, $fn=6);
 	       nut_wide=m3_nut_dia * cos(30);
@@ -104,18 +112,51 @@ module m3_screw(len=60, nut_at=-1, nut_channel=-1, nut_thick=m3_nut_thick) {
      }
 }
 
+// A block that looks like a cut through a cosine curve. Size parameter
+// similar to cube(), but x/y direction is symmetric to center, so the
+// actual width/height is twice. (TODO: make more like cube)
 module cos_block(a=[10,10,10]) {
      p = [ for (x = [-180:1:180]) [ x/180, cos(x)/2] ];
      linear_extrude(height=a[2]) scale(a) polygon(p);
 }
 
+// Make a 2D shape of length in X direction of "len", height in y-direction
+// of "Y" that has "wiggle_count" bumps.
+module sine_wiggle(wiggle_count=3, len=20, height=2, resolution=0.01) {
+     points = [ for (w = [0 : resolution : 1.0]) [ w * len, height/2 + height/2 * sin(w*wiggle_count*360-90)] ];
+     points1=concat([[0, -e]], points, [[len, -e]]);
+     translate([-len/2, 0, 0]) polygon(points1);
+}
+
+// A corner for a champfered box, represented as tiny objects for which it
+// is simple to wrap a hul() around.
+// this is for a front-left corner. Origin is at the bottom end of the corner,
+// the x and y direction size allow for different champfer angles in x and y
+// direction.
+// To use in different corners, it is probably easiest to mirror it (
+// using scale around the origin).
+module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
+     a=0.1;
+     cube([a, a, a]);
+     translate([0, side_y, height]) cube([a, a, a]);
+     translate([side_x, 0, height]) cube([a, a, a]);
+}
+
+// The electronics, display and button. Space it needs inside its casing.
+// Poking through top (view display and button) and bottom.
+module electronics_punch() {
+     extra=0.5;
+     w=42+2*extra;
+     h=29+2*extra;
+     translate([-w/2, -h, -15+2]) cube([w, h, 15]);
+     translate([-w/2+extra, -h+extra+5, 0]) color("blue") cube([28, 16, 10]);
+     translate([w/2-extra-6, -16, 0]) cylinder(r=7/2, h=10);
+}
+
+// Stem of indicator.
 module stem_punch() {
      // A little thinner in y direction to have enough 'squeeze' action.
      scale([1, 0.98, 1]) translate([0, 0, -25]) cylinder(r=stem_dia/2, h=50);
-}
-
-module stem_holder() {
-     cylinder(r=stem_dia/2 + 4, h=stem_high);
 }
 
 // Base where everything is sitting on the bottom.
@@ -127,6 +168,8 @@ module base(with_front_flat=true) {
      }
 }
 
+// Some text helping to identify from which git-hash this has been printed for
+// easier re-print.
 module version_punch(thick=1) {
      fs=5;
      color("red") linear_extrude(height=thick) {
@@ -136,7 +179,14 @@ module version_punch(thick=1) {
      }
 }
 
-module dial_punch(cable_slot=true) {
+// Outer case to hold the dial.
+module dial_holder() {
+     wall_r =dial_dia/2 + dial_wall;
+     rotate([90, 0, 0]) translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) cylinder(r=wall_r, h=dial_thick);
+}
+
+// Negative space to hold the dial and access holes for stem and cables.
+module dial_holder_punch(cable_slot=true) {
      extra=40;
      cable_management_channel=dial_wall/2;
      wall_r =dial_dia/2 + dial_wall;
@@ -170,12 +220,8 @@ module dial_punch(cable_slot=true) {
 	  }
 }
 
-module dial_holder() {
-     wall_r =dial_dia/2 + dial_wall;
-     rotate([90, 0, 0]) translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) cylinder(r=wall_r, h=dial_thick);
-}
-
-module aa_punch(h=3) {
+// Punching space for direction battery pictogram and +/- designations.
+module aa_pictogram_punch(h=3) {
      translate([0, 0, -h+0.5]) color("red") {
 	  translate([0, -aa_len*0.25-8, 0]) linear_extrude(height=h) text("–", halign="center");
 	  translate([0, aa_len*0.25, 0]) linear_extrude(height=h) text("+", halign="center");
@@ -189,22 +235,49 @@ module aa_punch(h=3) {
      }
 }
 
-module aabat(punch=false, straight_cut=3) {
+// Punching space for a AA-Battery including direction pictogram. Provides
+// a recangular access path to insert the battery.
+// Battery alongside Z axis, centered around X and Y axis.
+// Pictograms on negative Y side, battery insert on negative Y-side
+module aa_bat_punch(block_recess=3) {
      translate([0, 0, -aa_len/2]) {
 	  cylinder(r=aa_dia/2, h=aa_len);
-	  translate([-aa_dia/2, 0, 0]) cube([aa_dia, aa_dia/2-straight_cut, aa_len]);
-	  translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_punch();
+	  translate([-aa_dia/2, 0, 0]) cube([aa_dia, aa_dia/2-block_recess, aa_len]);
+	  translate([0, -aa_dia/2, aa_len/2]) rotate([90, 0, 0]) aa_pictogram_punch();
      }
 }
 
+// Box to hold batteries.
+module battery_box(with_wiggle=false) {
+     height=aa_len + 2*aa_wall;
+     width=2*aa_dia + aa_dist + 2*aa_wall;
+     thick=aa_dia+2*aa_wall;
+     difference() {
+	  union() {
+	       cc=2;  // Champfer on top.
+	       rotate([90, 0, 0]) translate([-width/2, 0, -thick])
+		    linear_extrude(height=thick)
+		    polygon([[0, 0], [0, height-cc], [cc, height],
+			     [width-cc, height], [width, height-cc],
+			     [width, 0]]);
+	       if (with_wiggle) {
+		    translate([-width/2, thick, height/2]) rotate([0, 90, 0])
+			 linear_extrude(height=width, convexity=10) sine_wiggle(len=height);
+	       }
+	  }
+	  battery_box_punch();
+     }
+}
+
+// Punching space for two batteries, battery lid screw and 1.5V tap cable space.
 module battery_box_punch() {
      height=aa_len + 2*aa_wall;
      width=2*aa_dia + aa_dist + 2*aa_wall;
      thick=aa_dia+2*aa_wall;
 
      translate([0, thick/2, 0]) {
-	  translate([-(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) aabat();
-	  translate([+(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) rotate([0, 180, 0]) aabat();
+	  translate([-(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) aa_bat_punch();
+	  translate([+(aa_dia+aa_dist)/2, 0, aa_wall+aa_len/2]) rotate([0, 180, 0]) aa_bat_punch();
 
 	  // Cable for 1.5V tap.
 	  translate([-(aa_dist+aa_dia)/2, 0, 0]) rotate([0, 0, -45]) translate([aa_dia/2, 0, aa_wall]) cylinder(r=dial_cable_thick/2, h=aa_len);
@@ -246,6 +319,7 @@ module battery_box_separator_block(lid_offset, depth,
 		       ]);
 }
 
+// Separate lid from the battery box
 module battery_box_separator(is_inside=false, lid_offset=5, depth=5,
 			     slope_top=1.1, slope_bottom=2.3,
 			     align_rim_deep=battery_box_rim_deep) {
@@ -280,33 +354,7 @@ module battery_box_separator(is_inside=false, lid_offset=5, depth=5,
      }
 }
 
-module sine_wiggle(tau_coverage=3, len=20, height=2, resolution=0.01) {
-     points = [ for (w = [0 : resolution : 1.0]) [ w * len, height/2 + height/2 * sin(w*tau_coverage*360-90)] ];
-     points1=concat([[0, -e]], points, [[len, -e]]);
-     translate([-len/2, 0, 0]) polygon(points1);
-}
-
-module battery_box(with_wiggle=false) {
-     height=aa_len + 2*aa_wall;
-     width=2*aa_dia + aa_dist + 2*aa_wall;
-     thick=aa_dia+2*aa_wall;
-     difference() {
-	  union() {
-	       cc=2;  // Champfer on top.
-	       rotate([90, 0, 0]) translate([-width/2, 0, -thick])
-		    linear_extrude(height=thick)
-		    polygon([[0, 0], [0, height-cc], [cc, height],
-			     [width-cc, height], [width, height-cc],
-			     [width, 0]]);
-	       if (with_wiggle) {
-		    translate([-width/2, thick, height/2]) rotate([0, 90, 0])
-			 linear_extrude(height=width, convexity=10) sine_wiggle(len=height);
-	       }
-	  }
-	  battery_box_punch();
-     }
-}
-
+// Punch for cables of batteries.
 module battery_power_punch() {
      cable_radius=1.1;
      // First part is a straight round hole.
@@ -322,6 +370,7 @@ module battery_power_punch() {
      }
 }
 
+// Mounting holes to hold down spheormeter frame.
 module bottom_screw_punch() {
      screw_len=stem_high * 2.3;
 
@@ -341,29 +390,34 @@ module bottom_screw_punch() {
      translate([0, -bottom_mount_center_offset, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
 }
 
-module dial_case(cable_slots=true) {
+// Screws needed to hold the stem in place
+module stem_squeeze_block_punch() {
+     mount_meat = 8;  // The 'meat' before we hit the butt-surface
+     mount_screw_len = dial_thick - dial_stem_pos + mount_meat + aa_wall/2;
+     translate([stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
+	  rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
+				       nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick, nut_channel=2*stem_high);
+     translate([-stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
+	  rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
+				       nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick, nut_channel=2*stem_high);
+}
+
+// Frame of the spheormeter with all solid parts put together and negative
+// spaces punched out. This part will then be separated in
+// stem_squeeze_block, back and battery lid below.
+module spherometer_frame(cable_slots=true) {
      difference() {
 	  union() {
 	       hull() {
 		    base();
-		    stem_holder();
 		    dial_holder();
 		    translate([0, dial_thick - dial_stem_pos, 0]) battery_box(with_wiggle=false);
 	       }
 	       translate([0, dial_thick - dial_stem_pos, 0]) battery_box(with_wiggle=battery_box_with_wiggle);
 	  }
-	  dial_punch(cable_slots);
+	  dial_holder_punch(cable_slots);
 	  bottom_screw_punch();
-
-	  // Stem holding. This should be a separate module.
-	  mount_meat = 8;  // The 'meat' before we hit the butt-surface
-	  mount_screw_len = dial_thick - dial_stem_pos + mount_meat + aa_wall/2;
-	  translate([stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
-	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
-					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick, nut_channel=2*stem_high);
-	  translate([-stem_mount_screw_distance/2, -mount_meat, max(m3_head_dia/2+1, stem_high/2)])
-	       rotate([-90, 0, 0]) m3_screw(len=mount_screw_len,
-					    nut_at=mount_meat+bottom_mount_back_offset-m3_nut_dia+m3_nut_thick, nut_channel=2*stem_high);
+	  stem_squeeze_block_punch();
 	  translate([0, dial_thick - dial_stem_pos, 0]) {
 	       battery_box_punch();
 	       if (cable_slots) battery_power_punch();
@@ -371,16 +425,9 @@ module dial_case(cable_slots=true) {
      }
 }
 
-// Separating behind and front of dial.
-module dial_separator(is_inside=false) {
-     // TODO: calculate base-width from other values.
-     w=32 - (is_inside ? 2*fit_tolerance : 0);
-     translate([-w/2, -100, -e]) cube([w, 100, stem_high+dial_wall+8]);
-}
-
-module dial_battery_lid() {
+module spherometer_frame_battery_lid() {
      intersection() {
-	  dial_case();
+	  spherometer_frame();
 	  translate([0, dial_thick - dial_stem_pos + fit_tolerance, 0])
 	       battery_box_separator(is_inside=true);
 	  // Make lid a tiny bit shorter at the bottom, so that it fits
@@ -389,27 +436,108 @@ module dial_battery_lid() {
      }
 }
 
-module dial_backend() {
+module spherometer_frame_main_block() {
      difference() {
-	  dial_case();
-	  dial_separator(is_inside=false);
+	  spherometer_frame();
+	  stem_squeeze_block_separator(is_inside=false);
 	  translate([0, dial_thick - dial_stem_pos, 0])
 	       battery_box_separator(is_inside=false);
      }
 }
 
-module dial_frontend() {
+// Separating behind and front of dial.
+module stem_squeeze_block_separator(is_inside=false) {
+     // TODO: calculate base-width from other values.
+     w=32 - (is_inside ? 2*fit_tolerance : 0);
+     translate([-w/2, -100, -e]) cube([w, 100, stem_high+dial_wall+8]);
+}
+
+module spherometer_frame_stem_squeeze_block() {
      intersection() {
-	  dial_case();
-	  translate([0, -fit_tolerance, -fit_tolerance]) dial_separator(is_inside=true);
+	  spherometer_frame();
+	  translate([0, -fit_tolerance, -fit_tolerance]) stem_squeeze_block_separator(is_inside=true);
+     }
+}
+
+// --
+// Display. The display is separate from the main spherometer_frame and
+// is 'plugigng' mechanically into a scrw punch channel and in the front
+// is screwed down.
+// --
+
+module display_front_block() {
+     intersection() {
+	  spherometer_frame(cable_slots=false);
+	  w=e;
+	  h=stem_high+dial_dia;
+	  dd=base_dia/2;
+	  translate([-50, -dd, -e]) cube([100, w, stem_high+dial_wall+8]);
+     }
+}
+
+module display_top_block() {
+     transition=10;  // Transition until we're flat in the front.
+     translate([-display_wide/2, -base_dia/2-transition, 0]) cube([display_wide, transition, display_box_thick]);
+}
+
+module display_transition_block() {
+     slice=0.25;        // size of block slice.
+     // We hull together many slices from the rounded bottom part of the
+     // dial with square block of the display, blending these together.
+     for (i = [-display_wide/2:slice:display_wide/2]) {
+	  hull() intersection() {
+	       translate([i, 0, 0]) cube([slice, 100, 100], center=true);
+	       union() {
+		    display_front_block();
+		    display_top_block();
+	       }
+	  }
+     }
+}
+
+module display_case() {
+     in_front_of_screws=4.5;
+     hull() {
+	  display_top_block();
+	  translate([-display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) champfer_point_cloud();
+	  translate([display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) scale([-1, 1, 1]) champfer_point_cloud();
+     }
+
+     // Retaining blocks to be matched up with the holes for the M3 nuts of the
+     // device.
+     nut_wide=m3_nut_dia * cos(30) - 2*fit_tolerance;
+     for (offset = [-bottom_mount_front_distance/2, bottom_mount_front_distance/2]) {
+	  translate([-nut_wide/2 + offset, -base_dia/2-e, stem_high+fit_tolerance]) cube([nut_wide, 3, m3_nut_thick-2*fit_tolerance]);
+     }
+}
+
+module display_case_punch() {
+     translate([0, -base_dia/2-1, 8.5]) electronics_punch();
+
+     // Screws at the very front to hold down display.
+     translate([0, -bottom_mount_front_display_offset, 0]) {
+	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5);
+	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5);
+     }
+}
+
+module display_part() {
+     difference() {
+	  union() {
+	       display_transition_block();  // From round to square
+	       display_case();              // Rest of the box.
+	  }
+	  display_case_punch();
+	  // Channels for the cable
+	  translate([stem_mount_screw_distance, -30, -e]) cube([3, 31, 8]);
+	  translate([-stem_mount_screw_distance-1.5, -30, -e]) cube([3, 31, 8]);
      }
 }
 
 module leg_plate() {
      difference() {
 	  color("#f0f0ff", alpha=0.3) cylinder(r=leg_plate_radius, h=leg_plate_thick);
-	  // TODO: make hole pattern here and bottom_screw_punch()
-	  // Hole pattern
+	  // TODO: unite hole pattern here and bottom_screw_punch()
 	  translate([0, bottom_mount_back_offset, -e]) {
 	       translate([bottom_mount_back_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
 	       translate([-bottom_mount_back_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
@@ -437,7 +565,7 @@ module leg_plate_2d() {  // laser cut this.
      projection(cut=true) leg_plate();
 }
 
-module leg_balls() {
+module demo_leg_balls() {
      ball_r=leg_ball_dia/2;
      hole_r=leg_ball_hole_dia/2;
      pos = ball_r - sqrt(ball_r*ball_r - hole_r*hole_r);
@@ -449,94 +577,16 @@ module leg_balls() {
 
 module demo_leg_plate() {
      translate([0, 0, -leg_plate_thick]) {
-	  %leg_plate();
-	  leg_balls();
+	  %leg_plate();   // 'transparent'
+	  demo_leg_balls();
      }
-}
-
-module front_block() {
-     intersection() {
-	  dial_case(cable_slots=false);
-	  w=e;
-	  h=stem_high+dial_dia;
-	  dd=base_dia/2;
-	  translate([-50, -dd, -e]) cube([100, w, stem_high+dial_wall+8]);
-     }
-}
-
-module display_top_block() {
-     transition=10;  // Transition until we're flat in the front.
-     translate([-display_wide/2, -base_dia/2-transition, 0]) cube([display_wide, transition, display_box_thick]);
-}
-
-module display_transition_block() {
-     slice=0.25;        // size of block slice.
-     for (i = [-display_wide/2:slice:display_wide/2]) {
-	  hull() intersection() {
-	       translate([i, 0, 0]) cube([slice, 100, 100], center=true);
-	       union() {
-		    front_block();
-		    display_top_block();
-	       }
-	  }
-     }
-}
-
-module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
-     a=0.1;
-     cube([a, a, a]);
-     translate([0, side_y, height]) cube([a, a, a]);
-     translate([side_x, 0, height]) cube([a, a, a]);
-}
-
-module display_case() {
-     in_front_of_screws=4.5;
-     hull() {
-	  display_top_block();
-	  translate([-display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) champfer_point_cloud();
-	  translate([display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) scale([-1, 1, 1]) champfer_point_cloud();
-     }
-     nut_wide=m3_nut_dia * cos(30) - 2*fit_tolerance;
-     for (offset = [-bottom_mount_front_distance/2, bottom_mount_front_distance/2]) {
-	  translate([-nut_wide/2 + offset, -base_dia/2-e, stem_high+fit_tolerance]) cube([nut_wide, 3, m3_nut_thick-2*fit_tolerance]);
-     }
-}
-
-module display_punch() {
-     translate([0, -base_dia/2-1, 9]) pcb();
-     // Very front to hold down display.
-     translate([0, -bottom_mount_front_display_offset, 0]) {
-	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-2, nut_at=display_box_thick/5);
-	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-2, nut_at=display_box_thick/5);
-     }
-}
-
-module display_part() {
-     difference() {
-	  union() {
-	       display_transition_block();
-	       display_case();
-	  }
-	  display_punch();
-	  translate([stem_mount_screw_distance, -30, -e]) cube([3, 31, 8]);
-	  translate([-stem_mount_screw_distance-1.5, -30, -e]) cube([3, 31, 8]);
-     }
-}
-
-module pcb() {
-     extra=0.5;
-     w=42+2*extra;
-     h=29+2*extra;
-     translate([-w/2, -h, -15+2]) cube([w, h, 15]);
-     translate([-w/2+extra, -h+extra+5, 0]) color("blue") cube([28, 16, 10]);
-     translate([w/2-extra-6, -16, 0]) cylinder(r=8/2, h=10);
 }
 
 // Assemble to see how that looks.
 if (true) {
      demo_leg_plate();
-     color("red") render() dial_frontend();
-     color("yellow") render() dial_backend();
-     color("blue") translate([0, 1*20, 0]) render() dial_battery_lid();
+     color("red") render() spherometer_frame_stem_squeeze_block();
+     color("yellow") render() spherometer_frame_main_block();
+     color("blue") translate([0, 1*20, 0]) render() spherometer_frame_battery_lid();
      color("gray") translate([0, -10, 0]) render() display_part();
 }

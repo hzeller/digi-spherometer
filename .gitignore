@@ -3,5 +3,7 @@
 *.elf
 *~
 *.stl
+*.dxf
+*.3mf
 *bak
 frame-generated-*
