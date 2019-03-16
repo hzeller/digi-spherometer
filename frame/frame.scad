@@ -17,7 +17,7 @@
 
 
 // The following variables are set in the makefile.
-print_quality=true;      // print quality: high-res, but slow to render.
+print_quality=false;      // print quality: high-res, but slow to render.
 version_id="git-hash";    // Identify version for easier re-print
 version_date="git-date";  // .. and date of that version.
 
@@ -70,11 +70,12 @@ battery_box_rim_deep=1.5;       // Alignment rim all around battery box.
 
 base_dia=dial_stem_pos*2;
 
-// TODO: not all these parameters are properly honored
 display_wall_thick=1.5;
-display_wide=55;
-display_high=35;
-display_box_thick=stem_high+dial_wall+3;
+display_top_wall=0.8;    // Front face a little thinner to have display close.
+display_wide=55;         // Mostly determined by electronics size.
+display_high=33;
+display_box_thick=11;  // Large enough to house electronics.
+display_transition=10;  // Transition between rounded dial and display box.
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
@@ -83,7 +84,7 @@ bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_center_offset=bottom_mount_front_offset + 0;
 bottom_mount_front_distance=display_wide - 8;  // right/left distance.
 
-bottom_mount_front_display_offset=display_high+base_dia/2-display_wall_thick-m3_nut_dia;
+bottom_mount_front_display_offset=base_dia/2+display_high-display_wall_thick-m3_nut_dia/2;
 bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - m3_nut_dia;
 
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
@@ -135,11 +136,13 @@ module sine_wiggle(wiggle_count=3, len=20, height=2, resolution=0.01) {
 // direction.
 // To use in different corners, it is probably easiest to mirror it (
 // using scale around the origin).
-module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
+module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=20) {
      a=0.1;
+     f=2;
      cube([a, a, a]);
      translate([0, side_y, height]) cube([a, a, a]);
-     translate([side_x, 0, height]) cube([a, a, a]);
+     translate([side_x, f, height]) cube([a, a, a]);
+     translate([side_x, 0, height-f]) cube([a, a, a]);
 }
 
 // The electronics, display and button. Space it needs inside its casing.
@@ -148,9 +151,10 @@ module electronics_punch() {
      extra=0.5;
      w=42+2*extra;
      h=29+2*extra;
-     translate([-w/2, -h, -15+2]) cube([w, h, 15]);
+     translate([-w/2, -h, -15+e]) cube([w, h, 15]);  // PCB size
+     // Display
      translate([-w/2+extra, -h+extra+5, 0]) color("blue") cube([28, 16, 10]);
-     translate([w/2-extra-6, -16, 0]) cylinder(r=7/2, h=10);
+     translate([w/2-extra-6, -16, 0]) cylinder(r=7/2, h=10);  // Button.
 }
 
 // Stem of indicator.
@@ -465,7 +469,7 @@ module spherometer_frame_stem_squeeze_block() {
 // is screwed down.
 // --
 
-module display_front_block() {
+module spherometer_frame_display_contact_cross_section() {
      intersection() {
 	  spherometer_frame(cable_slots=false);
 	  w=e;
@@ -476,8 +480,8 @@ module display_front_block() {
 }
 
 module display_top_block() {
-     transition=10;  // Transition until we're flat in the front.
-     translate([-display_wide/2, -base_dia/2-transition, 0]) cube([display_wide, transition, display_box_thick]);
+     translate([-display_wide/2, -base_dia/2-display_transition, 0])
+	  cube([display_wide, display_transition, display_box_thick]);
 }
 
 module display_transition_block() {
@@ -488,7 +492,19 @@ module display_transition_block() {
 	  hull() intersection() {
 	       translate([i, 0, 0]) cube([slice, 100, 100], center=true);
 	       union() {
-		    display_front_block();
+		    spherometer_frame_display_contact_cross_section();
+		    display_top_block();
+	       }
+	  }
+     }
+
+     // Where the spherometer frame hangs over the display width, we need
+     // to transition that as well.
+     for (i = [-display_wide/2, display_wide/2]) {
+	  hull() intersection() {
+	       translate([i + ((i<0) ? -5+e : 5-e), 0, 0]) cube([10, 100, 100], center=true);
+	       union() {
+		    spherometer_frame_display_contact_cross_section();
 		    display_top_block();
 	       }
 	  }
@@ -496,11 +512,11 @@ module display_transition_block() {
 }
 
 module display_case() {
-     in_front_of_screws=4.5;
+     start_y = -base_dia/2;
      hull() {
 	  display_top_block();
-	  translate([-display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) champfer_point_cloud();
-	  translate([display_wide/2, -bottom_mount_front_display_offset-in_front_of_screws, 0]) scale([-1, 1, 1]) champfer_point_cloud();
+	  translate([-display_wide/2, start_y - display_high, 0]) champfer_point_cloud();
+	  translate([display_wide/2, start_y - display_high, 0]) scale([-1, 1, 1]) champfer_point_cloud();
      }
 
      // Retaining blocks to be matched up with the holes for the M3 nuts of the
@@ -512,12 +528,19 @@ module display_case() {
 }
 
 module display_case_punch() {
-     translate([0, -base_dia/2-1, 8.5]) electronics_punch();
+     translate([0, -base_dia/2-1, display_box_thick-display_top_wall]) electronics_punch();
 
      // Screws at the very front to hold down display.
      translate([0, -bottom_mount_front_display_offset, 0]) {
-	  translate([bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5);
-	  translate([-bottom_mount_front_display_distance/2, 0, 0]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5);
+	  translate([bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, -90]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
+	  translate([-bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, 90]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
+     }
+}
+
+module display_cable_channel_punch(at_x) {
+     translate([at_x, e, -e]) hull() {
+	  translate([0, -base_dia/2-display_transition,0]) cube([3, e, e]);
+	  translate([0, -base_dia/2, 0]) cube([3, e, stem_high+5]);
      }
 }
 
@@ -529,8 +552,8 @@ module display_part() {
 	  }
 	  display_case_punch();
 	  // Channels for the cable
-	  translate([stem_mount_screw_distance, -30, -e]) cube([3, 31, 8]);
-	  translate([-stem_mount_screw_distance-1.5, -30, -e]) cube([3, 31, 8]);
+	  display_cable_channel_punch(stem_mount_screw_distance);
+	  display_cable_channel_punch(-stem_mount_screw_distance-1.5);
      }
 }
 
@@ -588,5 +611,5 @@ if (true) {
      color("red") render() spherometer_frame_stem_squeeze_block();
      color("yellow") render() spherometer_frame_main_block();
      color("blue") translate([0, 1*20, 0]) render() spherometer_frame_battery_lid();
-     color("gray") translate([0, -10, 0]) render() display_part();
+     color("gray") translate([0, 0, 0]) render() display_part();
 }
