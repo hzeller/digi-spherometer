@@ -31,7 +31,7 @@ fit_tolerance=0.3;  // Tolerance of parts in contact.
 m3_dia=3.4;         // Let it a little loose to not overconstrain things.
 m3_head_dia=6;
 m3_head_len=3;
-m3_nut_dia=5.4 / cos(30) + 2*fit_tolerance;  // div by cos(30) for outer circle
+m3_nut_dia=5.4 / cos(30) + 2*fit_tolerance;  // div by cos(30) for circumcircle
 m3_nut_thick=2.8;
 
 // Sperometer legs.
@@ -65,7 +65,7 @@ aa_dist = 8;      // Distance between batteries
 // Battery box wiggle printing on the back is a challenge. Maybe this needs to
 // be split in the wiggle part and flat battery box back, that are then glued
 // together.
-battery_box_with_wiggle=true;   // Easier to print if false :)
+battery_box_with_wiggle=false;   // Easier to print if false :)
 battery_box_rim_deep=1.5;       // Alignment rim all around battery box.
 
 base_dia=dial_stem_pos*2;
@@ -74,8 +74,8 @@ display_wall_thick=1.5;
 display_top_wall=0.8;    // Front face a little thinner to have display close.
 display_wide=55;         // Mostly determined by electronics size.
 display_high=33;
-display_box_thick=11;  // Large enough to house electronics.
-display_transition=10;  // Transition between rounded dial and display box.
+display_box_thick=11;    // Large enough to house electronics.
+display_transition=10;   // Transition blend between dial and display box.
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
