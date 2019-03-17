@@ -136,7 +136,7 @@ module sine_wiggle(wiggle_count=3, len=20, height=2, resolution=0.01) {
 // direction.
 // To use in different corners, it is probably easiest to mirror it (
 // using scale around the origin).
-module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=20) {
+module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
      a=0.1;
      f=2;
      cube([a, a, a]);
@@ -194,7 +194,7 @@ module dial_holder_punch(cable_slot=true) {
      extra=40;
      cable_management_channel=dial_wall/2;
      wall_r =dial_dia/2 + dial_wall;
-     connector_wide=7;
+     connector_wide=6 * dial_cable_thick;  // Only need 4, but let's have extra
      connector_from_top=13;
 
      connector_angle_from_top=90
@@ -209,18 +209,24 @@ module dial_holder_punch(cable_slot=true) {
 
 	  // Leave the top free. We punch out a nice cosine-shaped wobble
 	  top_punch=0.9*connector_from_top;
-	  translate([0,0,0]) rotate([-90, 0, 0]) translate([0, -dial_thick/2, 0]) cos_block([2*top_punch, dial_thick, dial_dia]);
+	  translate([0,0,e]) rotate([-90, 0, 0]) translate([0, -dial_thick/2, 0]) cos_block([2*top_punch, dial_thick, dial_dia]);
      }
      stem_punch();
 
      // More punch for cable management: lead it out on the back into the slot
      if (cable_slot) color("red") hull() {
-	       bottom_wide=connector_wide * 0.8;
+	       bottom_wide=connector_wide;
+	       back_channel_depth=1.2*dial_cable_thick;
+	       // Front channel access
 	       translate([stem_mount_screw_distance, -dial_stem_pos-e, dial_wall+stem_high/2]) cube([3, 1, stem_high+10]);
-	       translate([stem_mount_screw_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, dial_cable_thick, dial_cable_thick]);
+
+	       // Bottom back channel
+	       translate([stem_mount_screw_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, back_channel_depth, dial_cable_thick]);
+
+	       // top channel between connector and back.
 	       rotate([90, 0, 0])
 		    translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos])
-		    translate([0, 0, -dial_cable_thick]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([dial_cable_thick, dial_thick+dial_cable_thick]);
+		    translate([0, 0, -back_channel_depth]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([dial_cable_thick, dial_thick+back_channel_depth]);
 	  }
 }
 
@@ -532,8 +538,8 @@ module display_case_punch() {
 
      // Screws at the very front to hold down display.
      translate([0, -bottom_mount_front_display_offset, 0]) {
-	  translate([bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, -90]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
-	  translate([-bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, 90]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
+	  translate([bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, -135]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
+	  translate([-bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, 135]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
      }
 }
 
