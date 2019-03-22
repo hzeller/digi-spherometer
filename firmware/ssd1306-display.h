@@ -71,7 +71,4 @@ public:
   // fill_mask provides the pattern.
   void FillStripeRange(uint8_t x_from, uint8_t x_to, uint8_t ypos,
                        uint8_t fill_mask);
-
-private:
-  I2CMaster i2c_;
 };

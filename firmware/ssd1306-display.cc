@@ -49,6 +49,7 @@ static constexpr bool external_vcc = false;
 
 
 SSD1306Display::SSD1306Display() {
+  I2CMaster::Init();
   Reset();
 }
 
@@ -72,22 +73,22 @@ void SSD1306Display::Reset() {
     REG_NORM_INV,            // not inverted
     REG_CHARGE_PUMP, external_vcc ? 0x10 : 0x14,
   };
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(COMMAND_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(COMMAND_TRANSFER);
   for (uint8_t i = 0; i < sizeof(init_sequence); ++i) {
-    i2c_.Write(pgm_read_byte(&init_sequence[i]));
+    I2CMaster::Write(pgm_read_byte(&init_sequence[i]));
   }
-  i2c_.FinishTransmission();
+  I2CMaster::FinishTransmission();
 
   ClearScreen();
   SetOn(true);
 }
 
 void SSD1306Display::SetOn(bool on) {
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(COMMAND_TRANSFER);
-  i2c_.Write(REG_DISP | on);
-  i2c_.FinishTransmission();
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(COMMAND_TRANSFER);
+  I2CMaster::Write(REG_DISP | on);
+  I2CMaster::FinishTransmission();
 }
 
 void SSD1306Display::ClearScreen() {
@@ -96,17 +97,17 @@ void SSD1306Display::ClearScreen() {
     REG_PAGE_ADDR, 0, 0xff,
   };
 
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(COMMAND_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(COMMAND_TRANSFER);
   for (uint8_t i = 0; i < sizeof(cmd); ++i)
-    i2c_.Write(cmd[i]);
-  i2c_.FinishTransmission();
+    I2CMaster::Write(cmd[i]);
+  I2CMaster::FinishTransmission();
 
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(DATA_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(DATA_TRANSFER);
   for (uint16_t i = 0; i < 128 * 8; ++i)
-    i2c_.Write(0x00);
-  i2c_.FinishTransmission();
+    I2CMaster::Write(0x00);
+  I2CMaster::FinishTransmission();
 }
 
 void SSD1306Display::DrawPageFromProgmem(uint8_t page,
@@ -118,19 +119,19 @@ void SSD1306Display::DrawPageFromProgmem(uint8_t page,
   };
 
   // Set command for the following data
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(COMMAND_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(COMMAND_TRANSFER);
   for (uint8_t i = 0; i < sizeof(cmd); ++i)
-    i2c_.Write(cmd[i]);
-  i2c_.FinishTransmission();
+    I2CMaster::Write(cmd[i]);
+  I2CMaster::FinishTransmission();
 
   // Send data.
   uint8_t count = to_x - from_x;
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(DATA_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(DATA_TRANSFER);
   while (count--)
-    i2c_.Write(pgm_read_byte(progmem_buffer++));
-  i2c_.FinishTransmission();
+    I2CMaster::Write(pgm_read_byte(progmem_buffer++));
+  I2CMaster::FinishTransmission();
 }
 
 static int compare(const void *key, const void *element) {
@@ -179,15 +180,15 @@ void SSD1306Display::FillStripeRange(uint8_t x_from, uint8_t x_to, uint8_t ypos,
     REG_PAGE_ADDR, page, page,
   };
 
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(COMMAND_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(COMMAND_TRANSFER);
   for (uint8_t i = 0; i < sizeof(cmd); ++i)
-    i2c_.Write(cmd[i]);
-  i2c_.FinishTransmission();
+    I2CMaster::Write(cmd[i]);
+  I2CMaster::FinishTransmission();
 
-  i2c_.StartTransmission(SSD1306_I2C_ADDRESS);
-  i2c_.Write(DATA_TRANSFER);
+  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::Write(DATA_TRANSFER);
   for (uint8_t x = x_from; x < x_to; ++x)
-    i2c_.Write(fill_mask);
-  i2c_.FinishTransmission();
+    I2CMaster::Write(fill_mask);
+  I2CMaster::FinishTransmission();
 }

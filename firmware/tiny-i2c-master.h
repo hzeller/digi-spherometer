@@ -28,13 +28,13 @@
 // A simple I2C master that works with ATTiny devices.
 class I2CMaster {
 public:
-  I2CMaster();
+  static void Init();
 
-  void Enable(bool b);
-  void StartTransmission(uint8_t address);
-  void Write(uint8_t b);
-  void FinishTransmission();
+  static void Enable(bool b);
+  static void StartTransmission(uint8_t address);
+  static void Write(uint8_t b);
+  static void FinishTransmission();
 
 private:
-  uint8_t Transfer(uint8_t mode, uint8_t b);
+  static uint8_t Transfer(uint8_t mode, uint8_t b);
 };

@@ -25,7 +25,7 @@
 static constexpr uint8_t DELAY_2TWI = 1;  // > 4.5μs
 static constexpr uint8_t DELAY_4TWI = 1;  // > 4μs
 
-I2CMaster::I2CMaster() {
+void I2CMaster::Init() {
   USI_PORT |= (1<<USI_PORT_SDA) | (1<<USI_PORT_SCL);  // pullups on.
   USI_DDR |= (1<<USI_PORT_SDA) | (1<<USI_PORT_SCL);  // set output
 
