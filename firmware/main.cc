@@ -230,10 +230,10 @@ int main() {
 
     if (dial.off) {
       if (!last_dial.off) {  // Only need to write if we just got here.
-        disp.Print(font_smalltext, 0, 0, "© Henner Zeller");
-        disp.Print(font_tinytext, 0, 16, "GNU Public License");
-        disp.Print(font_tinytext, 0, 32, "github.com/hzeller/");
-        disp.Print(font_tinytext, 0, 48, "digi-spherometer");
+        disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
+        disp.Print(font_tinytext, 0, 16, "github hzeller/");
+        disp.Print(font_tinytext, 0, 32, "digi-spherometer");
+        disp.Print(font_tinytext, 0, 48, "    GNU GPL");
       }
     }
     else if (is_flat(dial.abs_value)) {

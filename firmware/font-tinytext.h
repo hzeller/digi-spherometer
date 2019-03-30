@@ -3,14 +3,14 @@
  * Font-File: tinytext.bdf
  *      Font: -Misc-Fixed-Medium-R-Normal--13-120-75-75-C-80-ISO10646-1
  *      Size: 13   Baseline at: 9
- * For chars: GNU Public License github.com/hzeller/digi-spherometer
+ * For chars: GNU GPL github hzeller/digi-spherometer
  */
 #ifndef FONT_tinytext_
 #define FONT_tinytext_
 
 #include "bdfont-support.h"
 
-/* font containing 26 characters */
+/* font containing 23 characters */
 extern const struct FontData PROGMEM font_tinytext;
 
 #endif /* FONT_tinytext_ */

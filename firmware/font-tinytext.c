@@ -3,7 +3,7 @@
  * Font-File: tinytext.bdf
  *      Font: -Misc-Fixed-Medium-R-Normal--13-120-75-75-C-80-ISO10646-1
  *      Size: 13   Baseline at: 9
- * For chars: GNU Public License github.com/hzeller/digi-spherometer
+ * For chars: GNU GPL github hzeller/digi-spherometer
  */
 
 #include "font-tinytext.h"
@@ -13,10 +13,6 @@ static const uint8_t PROGMEM _font_data_tinytext[] = {
 
   /* codepoint '-' RLE/nibble */
   0x05,0x10,
-
-  /* codepoint '.' plain bytes */
-  0x00,0x80,0x00,
-  0x01,0x03,0x01,
 
   /* codepoint '/' RLE/4 */
   0x55,0x80,0x40,0x20,0x10,  0x15,0x08,0x04,0x03,
@@ -46,10 +42,6 @@ static const uint8_t PROGMEM _font_data_tinytext[] = {
   0x75,0xff,0x90,0x08,0xf0,
   0x75,0x01,0x00,0x01,0x00,
 
-  /* codepoint 'c' RLE/nibble */
-  0x41,0xf0,0x08,  0x01,0x90,
-  0x41,0x00,0x01,  0x01,0x00,
-
   /* codepoint 'd' RLE/4 */
   0x5d,0xf0,0x08,0x90,0xff,
   0x5d,0x00,0x01,0x00,0x01,
@@ -77,10 +69,6 @@ static const uint8_t PROGMEM _font_data_tinytext[] = {
   /* codepoint 'm' RLE/4 */
   0x99,0xf8,0x08,0xf0,0x08,  0x01,0xf0,
   0x6d,0x01,0x00,0x00,0x01,
-
-  /* codepoint 'n' RLE/4 */
-  0x75,0xf8,0x10,0x08,0xf0,
-  0x5d,0x01,0x00,0x00,0x01,
 
   /* codepoint 'o' RLE/nibble */
   0x41,0xf0,0x08,  0x01,0xf0,
@@ -114,34 +102,31 @@ static const uint8_t PROGMEM _font_data_tinytext[] = {
 static const struct GlyphData PROGMEM _font_glyphs_tinytext[] = {
   {.codepoint = ' ',    .width= 8, .stripe_begin=1, .stripe_end=0, .left_margin=0, .right_margin=0, BDFONT_PLAIN(0), .data_offset=   0},
   {.codepoint = '-',    .width= 8, .stripe_begin=0, .stripe_end=1, .left_margin=1, .right_margin=2, BDFONT_RLE(1)  , .data_offset=   0},
-  {.codepoint = '.',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=2, .right_margin=3, BDFONT_PLAIN(0), .data_offset=   2},
-  {.codepoint = '/',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=1, BDFONT_RLE(2)  , .data_offset=   8},
-  {.codepoint = 'G',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset=  21},
-  {.codepoint = 'L',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  33},
-  {.codepoint = 'N',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset=  38},
-  {.codepoint = 'P',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  50},
-  {.codepoint = 'U',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  58},
-  {.codepoint = 'b',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset=  68},
-  {.codepoint = 'c',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  78},
-  {.codepoint = 'd',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset=  88},
-  {.codepoint = 'e',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  98},
-  {.codepoint = 'g',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 108},
-  {.codepoint = 'h',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 118},
-  {.codepoint = 'i',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=2, BDFONT_RLE(1)  , .data_offset= 128},
-  {.codepoint = 'l',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=2, BDFONT_RLE(1)  , .data_offset= 136},
-  {.codepoint = 'm',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 144},
-  {.codepoint = 'n',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 156},
-  {.codepoint = 'o',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 166},
-  {.codepoint = 'p',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 176},
-  {.codepoint = 'r',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 185},
-  {.codepoint = 's',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 195},
-  {.codepoint = 't',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 205},
-  {.codepoint = 'u',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 214},
-  {.codepoint = 'z',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 224},
+  {.codepoint = '/',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=1, BDFONT_RLE(2)  , .data_offset=   2},
+  {.codepoint = 'G',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset=  15},
+  {.codepoint = 'L',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  27},
+  {.codepoint = 'N',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset=  32},
+  {.codepoint = 'P',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  44},
+  {.codepoint = 'U',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  52},
+  {.codepoint = 'b',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset=  62},
+  {.codepoint = 'd',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset=  72},
+  {.codepoint = 'e',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset=  82},
+  {.codepoint = 'g',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset=  92},
+  {.codepoint = 'h',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 102},
+  {.codepoint = 'i',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=2, BDFONT_RLE(1)  , .data_offset= 112},
+  {.codepoint = 'l',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=2, BDFONT_RLE(1)  , .data_offset= 120},
+  {.codepoint = 'm',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 128},
+  {.codepoint = 'o',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 140},
+  {.codepoint = 'p',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 150},
+  {.codepoint = 'r',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 159},
+  {.codepoint = 's',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 169},
+  {.codepoint = 't',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 179},
+  {.codepoint = 'u',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 188},
+  {.codepoint = 'z',    .width= 8, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 198},
 };
 
 const struct FontData PROGMEM font_tinytext = {
-  .available_glyphs = 26,
+  .available_glyphs = 23,
   .baseline = 9,
   .stripes = 2,
   .bits = _font_data_tinytext,
