@@ -41,6 +41,10 @@ as `ƒ`, `μ` or `±`. The `Print()` function accepts
 text-literals as UTF-8 strings, which makes them very natural to use while
 keeping the code compact.
 
+Anyway, the tool to generate the font-data and support functions to emit these
+became its [own little project](https://github.com/hzeller/bdfont.data) - check
+it out if you regularly have to get bitmapped fonts into small devices.
+
 ### Code choices
 Even though binary space is limited, `float`-numbers are used for the
 calculations; it simplifies code in comparsion to fixed-point integer

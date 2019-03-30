@@ -18,7 +18,7 @@
 #include <stdint.h>
 
 #include "tiny-i2c-master.h"
-#include "font-support.h"
+#include "bdfont-support.h"
 
 // A super basic interface to the SSD1306 display that doesn't have any
 // frame-buffer (as the whole RAM of the attiny is just a fraction of what
@@ -39,12 +39,6 @@ public:
   // Switch display light on/off
   void SetOn(bool on);
 
-  // Draw page (0..7) from in x range (0..127) from
-  // buffer (expecting (to_x - from_x) bytes. from_x is inclusive, to_x is
-  // the byte after the last. So from_x=42, to_x=43 writes one byte.
-  void DrawPageFromProgmem(uint8_t page, uint8_t from_x, uint8_t to_x,
-                           const uint8_t *progmem_buffer);
-
   // Write a string with the given font that is stored in progmem memory.
   //
   // Since there is not enough RAM space in tha Attiny, we directly read
@@ -63,7 +57,7 @@ public:
   // (Fonts are allowed to only contain characters that are needed in the
   //  application, so they can sparsely populated. The glyphs are expected to
   //  be sorted by codepoint)
-  uint8_t Print(const MetaFont *progmem_font,
+  uint8_t Print(const FontData &font,
                 uint8_t xpos, uint8_t ypos, const char *utf8_text);
 
   // Fills a stripe in x-range [x_from...x_to). Stripe is given by y coordinate

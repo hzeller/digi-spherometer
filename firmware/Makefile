@@ -11,7 +11,7 @@ AVRDUDE     = avrdude -p t85 -c stk500v2 -P $(AVRDUDE_DEVICE)
 FLASH_CMD   = $(AVRDUDE) -e -U flash:w:main.hex
 LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections
 OBJECTS=main.o ssd1306-display.o tiny-i2c-master.o strfmt.o \
-        font-bignumber.o font-smalltext.o font-tinytext.o font-okfont.o
+	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o
 
 all : main.hex
 
@@ -24,6 +24,14 @@ disasm: main.elf
 
 main.hex: main.elf
 	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+
+main.cc : font-bignumber.c font-smalltext.c font-tinytext.c
+
+# this requires http://github.com/hzeller/bdfont.data to be installed
+# For distribution, we don't depend on %.chars, so that a git cloned
+# project does not need bdfont-data-gen installed.
+font-%.c:
+	bdfont-data-gen -s fonts/$*.bdf $* -C $*.chars
 
 flash: main.hex
 	$(FLASH_CMD)

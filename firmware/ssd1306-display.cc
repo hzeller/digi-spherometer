@@ -44,7 +44,7 @@ static constexpr uint8_t DATA_TRANSFER    = 0x40;
 
 static constexpr uint8_t SSD1306_I2C_ADDRESS = 0x78;
 
-static constexpr bool upside_down = false;  // Rotate by 180 degrees.
+static constexpr bool upside_down = true;  // Rotate by 180 degrees.
 static constexpr bool external_vcc = false;
 
 #define DISP_SH1106
@@ -64,10 +64,8 @@ void SSD1306Display::Reset() {
     REG_MEM_ADDR, 0x00,
 #endif
     REG_DISP_START_LINE,
-#ifndef DISP_SH1106
     REG_SEG_REMAP | (upside_down ? 0x01 : 0x00),
     REG_COM_OUT_DIR | (upside_down ? 0x08 : 0x00),
-#endif
     REG_DISP_OFFSET, 0x00,
     REG_COM_PIN_CFG, h == 32 ? 0x02 : 0x12,
     REG_DISP_CLK_DIV, 0x80,
@@ -132,73 +130,41 @@ void SSD1306Display::ClearScreen() {
 #endif
 }
 
-void SSD1306Display::DrawPageFromProgmem(uint8_t page,
-                                         uint8_t from_x, uint8_t to_x,
-                                         const uint8_t *progmem_buffer) {
+static void StartStripeTx(uint8_t stripe, uint8_t width,
+                          uint8_t x_pos, uint8_t y_page) {
   I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
   I2CMaster::Write(COMMAND_TRANSFER);
 
 #ifdef DISP_SH1106
-  const uint8_t start_pos = from_x + 2;
-  I2CMaster::Write(COMMAND_TRANSFER);
-  I2CMaster::Write(0xB0 | page);  // row address
+  (void)width;
+  const uint8_t start_pos = x_pos + 2;
+  I2CMaster::Write(0xB0 | (y_page + stripe));  // row address
   I2CMaster::Write(0x00 | (start_pos & 0x0f));
   I2CMaster::Write(0x10 | (start_pos >> 4));
 #else
   const uint8_t cmd[] = {
-    REG_COL_ADDR, from_x, uint8_t(to_x - 1),
-    REG_PAGE_ADDR, page, page,
+    REG_COL_ADDR, x_pos, (uint8_t)(x_pos + width),
+    REG_PAGE_ADDR, (uint8_t)(y_page + stripe), (uint8_t)(y_page + stripe),
   };
-
-  // Set command for the following data
   for (uint8_t i = 0; i < sizeof(cmd); ++i)
     I2CMaster::Write(cmd[i]);
 #endif
   I2CMaster::FinishTransmission();
 
-  // Send data.
-  uint8_t count = to_x - from_x;
   I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
   I2CMaster::Write(DATA_TRANSFER);
-  while (count--)
-    I2CMaster::Write(pgm_read_byte(progmem_buffer++));
-  I2CMaster::FinishTransmission();
 }
 
-static int compare(const void *key, const void *element) {
-  int codepoint = pgm_read_word(element);
-  int search_codepoint = *static_cast<const uint16_t*>(key);
-  return search_codepoint - codepoint;
-}
-
-static const MetaGlyph* FindProgmemGlyph(uint16_t codepoint,
-                                         const MetaFont &meta,
-                                         const MetaFont *progmem_font) {
-  const uint8_t *glyph_data = (const uint8_t*)progmem_font + sizeof(MetaFont);
-  return static_cast<const MetaGlyph*>(
-    bsearch(&codepoint, glyph_data, meta.available_glyphs, meta.glyph_data_size,
-            compare));
-}
-
-uint8_t SSD1306Display::Print(const MetaFont *progmem_font,
-                              uint8_t xpos, uint8_t ypos,
+uint8_t SSD1306Display::Print(const FontData &font,
+                              uint8_t xpos, const uint8_t ypos,
                               const char *utf8_text) {
-  uint8_t ypage = ypos / 8;  // TODO: maybe do some shifting for in-between
-  MetaFont unpacked_font;
-  memcpy_P(&unpacked_font, progmem_font, sizeof(unpacked_font));
   while (*utf8_text) {
     const uint32_t cp = utf8_next_codepoint(utf8_text);
-    const MetaGlyph *progmem_glyph = FindProgmemGlyph(cp, unpacked_font,
-                                                      progmem_font);
-    if (progmem_glyph == nullptr) continue;
-    MetaGlyph unpacked_glyph;
-    memcpy_P(&unpacked_glyph, progmem_glyph, sizeof(unpacked_glyph));
-    for (uint8_t y = 0; y < unpacked_font.pages; ++y) {
-      const uint8_t *data = ((const uint8_t*)(progmem_glyph) + sizeof(MetaGlyph)
-                             + y * unpacked_font.font_width);
-      DrawPageFromProgmem(ypage + y, xpos, xpos + unpacked_glyph.width, data);
-    }
-    xpos += unpacked_glyph.width;
+    xpos += BDFONT_EMIT_GLYPH(
+      &font, cp, true,
+      { StartStripeTx(stripe, glyph_width, xpos, ypos/8); },
+      { I2CMaster::Write(b); },
+      { I2CMaster::FinishTransmission(); });
   }
   return xpos;
 }

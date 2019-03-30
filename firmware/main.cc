@@ -32,7 +32,6 @@
 #include "font-bignumber.h"
 #include "font-smalltext.h"
 #include "font-tinytext.h"
-#include "font-okfont.h"
 
 // Choose reading function of dial indicator here.
 // (only  indicator we support right now is autolet, but we could have a
@@ -239,7 +238,7 @@ int main() {
     }
     else if (is_flat(dial.abs_value)) {
       disp.Print(font_smalltext, 48, 0, "flat");
-      disp.Print(font_okfont, 34, 16, "OK");
+      disp.Print(font_bignumber, 34, 16, "OK");
     }
     else if (!dial.negative) {
       disp.Print(font_smalltext, 0, 8, "Please zero on");
