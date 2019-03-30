@@ -44,8 +44,8 @@
 constexpr float d_mm = 50.0f;
 
 // Pins the dial indicator is connected to.
-constexpr uint8_t CLK_BIT  = (1<<4);
-constexpr uint8_t DATA_BIT = (1<<3);
+constexpr uint8_t CLK_BIT  = (1<<3);
+constexpr uint8_t DATA_BIT = (1<<4);
 
 constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
 
@@ -184,6 +184,7 @@ void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
 static inline bool is_flat(int32_t value) { return value < 2; }
 
 int main() {
+  PORTB = CLK_BIT | DATA_BIT;  // Pullup for the transistor level converter.
   _delay_ms(500);  // Let display warm up and get ready before the first i2c
   SSD1306Display disp;
   Button button;
