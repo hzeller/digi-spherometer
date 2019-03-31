@@ -1,6 +1,10 @@
 # <h.zeller@acm.org>
 DEFINES=-DF_CPU=8000000UL
 
+# If the oled display is using a SH1106 controller (typically the 1.3" are),
+# then uncomment the following define
+DEFINES+=-DDISP_SH1106
+
 TARGET_ARCH=-mmcu=attiny85
 CC=avr-gcc
 CFLAGS=-Os -g -Wall -Wextra -ffunction-sections -fdata-sections -mcall-prologues $(DEFINES) -I.

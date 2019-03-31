@@ -23,7 +23,8 @@
 // No error checking, we assume string is UTF-8 clean.
 template <typename byte_iterator>
 uint16_t utf8_next_codepoint(byte_iterator &it) {
-  uint16_t cp = *it++;
+  uint16_t cp = *it;
+  ++it;
   if (cp < 0x80) {
     return cp;   // iterator already incremented.
   }

@@ -47,8 +47,6 @@ static constexpr uint8_t SSD1306_I2C_ADDRESS = 0x78;
 static constexpr bool upside_down = true;  // Rotate by 180 degrees.
 static constexpr bool external_vcc = false;
 
-#define DISP_SH1106
-
 SSD1306Display::SSD1306Display() {
   I2CMaster::Init();
   Reset();
@@ -159,7 +157,7 @@ uint8_t SSD1306Display::Print(const FontData &font,
                               uint8_t xpos, const uint8_t ypos,
                               const char *utf8_text) {
   while (*utf8_text) {
-    const uint32_t cp = utf8_next_codepoint(utf8_text);
+    const uint16_t cp = utf8_next_codepoint(utf8_text);
     xpos += BDFONT_EMIT_GLYPH(
       &font, cp, true,
       { StartStripeTx(stripe, glyph_width, xpos, ypos/8); },
