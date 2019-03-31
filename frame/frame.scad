@@ -386,8 +386,8 @@ module bottom_screw_punch() {
 
      // Back
      translate([0, bottom_mount_back_offset, 0]) {
-	  translate([bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 360 - 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=15);
-	  translate([-bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=15);
+	  translate([bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 360 - 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_thick=18);
+	  translate([-bottom_mount_back_distance/2, 0, 0]) rotate([0, 0, 150]) m3_screw(len=screw_len, nut_at=stem_high, nut_thick=18);
      }
 
      // Front
@@ -616,6 +616,6 @@ if (true) {
      demo_leg_plate();
      color("red") render() spherometer_frame_stem_squeeze_block();
      color("yellow") render() spherometer_frame_main_block();
-     color("blue") translate([0, 1*20, 0]) render() spherometer_frame_battery_lid();
+     //color("blue") translate([0, 1*20, 0]) render() spherometer_frame_battery_lid();
      color("gray") translate([0, 0, 0]) render() display_part();
 }
