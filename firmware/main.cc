@@ -48,6 +48,24 @@ constexpr uint8_t DATA_BIT = (1<<4);
 
 constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
 
+#ifndef INDICATOR_DECIMALS
+#  define INDICATOR_DECIMALS 3
+#endif
+
+#if INDICATOR_DECIMALS == 3
+constexpr float raw2mm = 1000.0f;
+constexpr uint8_t raw_fmt_mm_digits = 3;
+constexpr float raw2inch = 100000.0f;
+constexpr uint8_t raw_fmt_inch_digits = 5;
+#elif INDICATOR_DECIMALS == 2
+constexpr float raw2mm = 100.0f;
+constexpr uint8_t raw_fmt_mm_digits = 2;
+constexpr float raw2inch = 10000.0f;
+constexpr uint8_t raw_fmt_inch_digits = 4;
+#else
+#  error "Unhandled INDICATOR_DECIMALS value."
+#endif
+
 // TODO: also take radius of balls used as feet into account.
 // TODO: factors and decimals for 2 and 3 digit indicators
 
@@ -111,7 +129,9 @@ void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
   // Print sag value we got from the dial indicator
   uint8_t x = disp->Print(font_smalltext, 0, 0, "sag=");
   x = disp->Print(font_smalltext, x, 0,
-                  strfmt(m.raw_sag, m.imperial ? 5 : 3, 7));
+                  strfmt(m.raw_sag,
+                         m.imperial ? raw_fmt_inch_digits : raw_fmt_mm_digits,
+                         7));
   disp->Print(font_smalltext, x, 0, m.imperial ? "\"  " : "mm");
 
   // Make sure that it is clear we're talking about the sphere radius
@@ -255,7 +275,7 @@ int main() {
       int32_t value = dial.is_imperial ? dial.abs_value * 5 : dial.abs_value;
       prepared_data.raw_sag = value;
       prepared_data.imperial = dial.is_imperial;
-      const float sag = dial.is_imperial ? value / 100000.0f : value / 1000.0f;
+      const float sag = dial.is_imperial ? value / raw2inch : value / raw2mm;
       prepared_data.radius = calc_r(dial.is_imperial, sag);
 
       if (display_page == 0)

@@ -2,8 +2,16 @@
 DEFINES=-DF_CPU=8000000UL
 
 # If the oled display is using a SH1106 controller (typically the 1.3" are),
-# then uncomment the following define
+# then use this define.
 DEFINES+=-DDISP_SH1106
+
+# By default, we assume a device with 3 decimals (0.001mm resolution). If it
+# is a 2 digit device, change the following to 2
+# (Note, you typically don't want a device with such rough resolution)
+#DEFINES+=-DINDICATOR_DECIMALS=3
+
+# Defines can also be given on the command-line
+DEFINES+=$(USER_DEFINES)
 
 TARGET_ARCH=-mmcu=attiny85
 CC=avr-gcc
@@ -43,6 +51,18 @@ flash: main.hex
 clean:
 	rm -f $(OBJECTS) main.elf main.hex
 
-# Set to 8Mhz RC
+# Set to 8Mhz RC on Attiny85
 fuse:
 	$(AVRDUDE) -U lfuse:w:0xe2:m
+
+# Make sure to recompile everything if cflags change.
+compiler-flags: FORCE
+	@echo '$(CXX) $(CXXFLAGS)' | cmp -s - $@ || echo '$(CXX) $(CXXFLAGS)' > $@
+
+%.o : %.c compiler-flags
+	$(CC) $(TARGET_ARCH) $(CFLAGS) -c -o $@ $<
+
+%.o : %.cc compiler-flags
+	$(CXX) $(TARGET_ARCH) $(CXXFLAGS) -c -o $@ $<
+
+.PHONY: FORCE

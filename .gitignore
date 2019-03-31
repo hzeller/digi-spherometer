@@ -7,3 +7,5 @@
 *.3mf
 *bak
 frame-generated-*
+compiler-flags
+
