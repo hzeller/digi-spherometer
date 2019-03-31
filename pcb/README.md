@@ -8,5 +8,5 @@ done with some generic NPN transistors.
 ### Schematic
 ![](../img/spherometer-display-schematic.png)
 
-### The first prototype board
+### As prototype board
 ![](../img/prototype-board.jpg)

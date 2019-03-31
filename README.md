@@ -10,11 +10,11 @@ printed on an OLED display. It also adds some other nifty features, such as
 converting this into the ƒ/N for your mirror size. See [firmware]-page for
 feature details.
 
-The microcontroller is an [ATTiny85], the display is a [SSD1306]
-compatible 128x64 OLED display with I²C interface. The dial indicator is
-an generic [autoutlet-indicator] (very cheap in a get-what-you-pay-for sense:
-It shows 1μm resolution, but the last digit is pretty much random. Next
-experiments will be with a higher quality device...).
+The microcontroller is an [ATTiny85], the display is a 0.96" [SSD1306], or
+1.3" SH1106 compatible 128x64 OLED display with I²C interface.
+The dial indicator is an generic [autoutlet-indicator] (very cheap in a
+get-what-you-pay-for sense: It shows 1μm resolution, but the documentation does
+not mention any error range.
 
 The SPC connector for the indicator is 3D printed; the [EspDRO] project
 has a [design for the plug] which works very well.
