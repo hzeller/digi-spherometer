@@ -25,7 +25,7 @@
 #include <util/delay.h>
 #include <math.h>
 
-#include "ssd1306-display.h"
+#include "sh1106-display.h"
 #include "strfmt.h"
 
 // Compiled-in fonts we're using for the UI.
@@ -125,7 +125,7 @@ struct MeasureData {
   float radius;
 };
 
-void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
+void ShowRadiusPage(SH1106Display *disp, const MeasureData &m) {
   // Print sag value we got from the dial indicator
   uint8_t x = disp->Print(font_smalltext, 0, 0, "sag=");
   x = disp->Print(font_smalltext, x, 0,
@@ -164,7 +164,7 @@ void ShowRadiusPage(SSD1306Display *disp, const MeasureData &m) {
   }
 }
 
-void ShowFocusPage(SSD1306Display *disp, const MeasureData &m, int page) {
+void ShowFocusPage(SH1106Display *disp, const MeasureData &m, int page) {
   uint8_t x;
   const float f = m.radius / 2;  // Focal length of a sphere.
   x = disp->Print(font_smalltext, 0, 0, "ƒ = ");
@@ -205,7 +205,7 @@ static inline bool is_flat(int32_t value) { return value < 2; }
 int main() {
   PORTB = CLK_BIT | DATA_BIT;  // Pullup for the transistor level converter.
   _delay_ms(500);  // Let display warm up and get ready before the first i2c
-  SSD1306Display disp;
+  SH1106Display disp;
   Button button;
 
   DialData last_dial;

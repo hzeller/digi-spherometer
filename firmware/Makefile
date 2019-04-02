@@ -1,9 +1,12 @@
 # <h.zeller@acm.org>
 DEFINES=-DF_CPU=8000000UL
 
-# If the oled display is using a SH1106 controller (typically the 1.3" are),
-# then use this define.
-DEFINES+=-DDISP_SH1106
+# If the oled display is using a SSD1306 controller (typically the 0.96" are),
+# then use this define
+#DEFINES+=-DDISP_SSD1306
+
+# I2C address of the display. 0x78 a common one.
+#DEFINES+=-DDISPLAY_I2C=0x78
 
 # By default, we assume a device with 3 decimals (0.001mm resolution). If it
 # is a 2 digit device, change the following to 2
@@ -22,7 +25,7 @@ AVRDUDE_DEVICE ?= /dev/ttyUSB0
 AVRDUDE     = avrdude -p t85 -c stk500v2 -P $(AVRDUDE_DEVICE)
 FLASH_CMD   = $(AVRDUDE) -e -U flash:w:main.hex
 LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections
-OBJECTS=main.o ssd1306-display.o tiny-i2c-master.o strfmt.o \
+OBJECTS=main.o sh1106-display.o tiny-i2c-master.o strfmt.o \
 	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o
 
 all : main.hex

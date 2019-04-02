@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "ssd1306-display.h"
+#include "sh1106-display.h"
 
 #include <avr/pgmspace.h>
 #include <stdlib.h>
@@ -42,25 +42,32 @@ static constexpr uint8_t REG_CHARGE_PUMP     = 0x8d;
 static constexpr uint8_t COMMAND_TRANSFER = 0x00;
 static constexpr uint8_t DATA_TRANSFER    = 0x40;
 
-static constexpr uint8_t SSD1306_I2C_ADDRESS = 0x78;
+#ifdef DISPLAY_I2C
+static constexpr uint8_t SH1106_I2C_ADDRESS = DISPLAY_I2C;
+#else
+static constexpr uint8_t SH1106_I2C_ADDRESS = 0x78;
+#endif
 
 static constexpr bool upside_down = true;  // Rotate by 180 degrees.
 static constexpr bool external_vcc = false;
 
-SSD1306Display::SSD1306Display() {
+#ifdef DISP_SSD1306
+static constexpr uint8_t x_offset = 0;
+#else
+static constexpr uint8_t x_offset = 2;   // 128px wide, but 2pixel border
+#endif
+
+SH1106Display::SH1106Display() {
   I2CMaster::Init();
   Reset();
 }
 
-void SSD1306Display::Reset() {
+void SH1106Display::Reset() {
   SetOn(false);
 
   // Init stuff.
-  const uint8_t h = 64;
+  constexpr uint8_t h = 64;
   static const uint8_t PROGMEM init_sequence[] = {
-#ifndef DISP_SH1106
-    REG_MEM_ADDR, 0x00,
-#endif
     REG_DISP_START_LINE,
     REG_SEG_REMAP | (upside_down ? 0x01 : 0x00),
     REG_COM_OUT_DIR | (upside_down ? 0x08 : 0x00),
@@ -74,7 +81,7 @@ void SSD1306Display::Reset() {
     REG_NORM_INV,            // not inverted
     REG_CHARGE_PUMP, external_vcc ? 0x10 : 0x14,
   };
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
   I2CMaster::Write(COMMAND_TRANSFER);
   for (uint8_t i = 0; i < sizeof(init_sequence); ++i) {
     I2CMaster::Write(pgm_read_byte(&init_sequence[i]));
@@ -85,112 +92,69 @@ void SSD1306Display::Reset() {
   SetOn(true);
 }
 
-void SSD1306Display::SetOn(bool on) {
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+void SH1106Display::SetOn(bool on) {
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
   I2CMaster::Write(COMMAND_TRANSFER);
   I2CMaster::Write(REG_DISP | on);
   I2CMaster::FinishTransmission();
 }
 
-void SSD1306Display::ClearScreen() {
-#ifdef DISP_SH1106
+void SH1106Display::ClearScreen() {
   for (uint8_t y = 0; y < 8; ++y) {
-    I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+    I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
     I2CMaster::Write(COMMAND_TRANSFER);
     I2CMaster::Write(0xB0 | y);  // row address
     I2CMaster::Write(0x00 | 2);  // col: 00
     I2CMaster::Write(0x10 | 0);
     I2CMaster::FinishTransmission();
 
-    I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+    I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
     I2CMaster::Write(DATA_TRANSFER);
     for (uint8_t i = 0; i < 128; ++i)
       I2CMaster::Write(0x00);
     I2CMaster::FinishTransmission();
   }
-#else
-  const uint8_t cmd[] = {
-    REG_COL_ADDR, 0, 127,
-    REG_PAGE_ADDR, 0, 0xff,
-  };
-
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
-  I2CMaster::Write(COMMAND_TRANSFER);
-  for (uint8_t i = 0; i < sizeof(cmd); ++i)
-    I2CMaster::Write(cmd[i]);
-  I2CMaster::FinishTransmission();
-
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
-  I2CMaster::Write(DATA_TRANSFER);
-  for (uint16_t i = 0; i < 128 * 8; ++i)
-    I2CMaster::Write(0x00);
-  I2CMaster::FinishTransmission();
-#endif
 }
 
-static void StartStripeTx(uint8_t stripe, uint8_t width,
-                          uint8_t x_pos, uint8_t y_page) {
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+static void StartStripeTx(uint8_t stripe, uint8_t x_pos, uint8_t y_page) {
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
   I2CMaster::Write(COMMAND_TRANSFER);
-
-#ifdef DISP_SH1106
-  (void)width;
-  const uint8_t start_pos = x_pos + 2;
+  const uint8_t start_pos = x_pos + x_offset;
   I2CMaster::Write(0xB0 | (y_page + stripe));  // row address
   I2CMaster::Write(0x00 | (start_pos & 0x0f));
   I2CMaster::Write(0x10 | (start_pos >> 4));
-#else
-  const uint8_t cmd[] = {
-    REG_COL_ADDR, x_pos, (uint8_t)(x_pos + width),
-    REG_PAGE_ADDR, (uint8_t)(y_page + stripe), (uint8_t)(y_page + stripe),
-  };
-  for (uint8_t i = 0; i < sizeof(cmd); ++i)
-    I2CMaster::Write(cmd[i]);
-#endif
   I2CMaster::FinishTransmission();
 
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
   I2CMaster::Write(DATA_TRANSFER);
 }
 
-uint8_t SSD1306Display::Print(const FontData &font,
+uint8_t SH1106Display::Print(const FontData &font,
                               uint8_t xpos, const uint8_t ypos,
                               const char *utf8_text) {
   while (*utf8_text) {
     const uint16_t cp = utf8_next_codepoint(utf8_text);
-    xpos += BDFONT_EMIT_GLYPH(
-      &font, cp, true,
-      { StartStripeTx(stripe, glyph_width, xpos, ypos/8); },
-      { I2CMaster::Write(b); },
-      { I2CMaster::FinishTransmission(); });
+    xpos += BDFONT_EMIT_GLYPH(&font, cp, true,
+                              { StartStripeTx(stripe, xpos, ypos/8); },
+                              { I2CMaster::Write(b); },
+                              { I2CMaster::FinishTransmission(); });
   }
   return xpos;
 }
 
-void SSD1306Display::FillStripeRange(uint8_t x_from, uint8_t x_to, uint8_t ypos,
+void SH1106Display::FillStripeRange(uint8_t x_from, uint8_t x_to, uint8_t ypos,
                                      uint8_t fill_mask) {
   uint8_t page = ypos / 8;
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
   I2CMaster::Write(COMMAND_TRANSFER);
-
-#ifdef DISP_SH1106
-  const uint8_t start_pos = x_from + 2;
+  const uint8_t start_pos = x_from + x_offset;
   I2CMaster::Write(COMMAND_TRANSFER);
   I2CMaster::Write(0xB0 | page);  // row address
   I2CMaster::Write(0x00 | (start_pos & 0x0f));
   I2CMaster::Write(0x10 | (start_pos >> 4));
-#else
-  const uint8_t cmd[] = {
-    REG_COL_ADDR, x_from, uint8_t(x_to-1),
-    REG_PAGE_ADDR, page, page,
-  };
-
-  for (uint8_t i = 0; i < sizeof(cmd); ++i)
-    I2CMaster::Write(cmd[i]);
-#endif
   I2CMaster::FinishTransmission();
 
-  I2CMaster::StartTransmission(SSD1306_I2C_ADDRESS);
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
   I2CMaster::Write(DATA_TRANSFER);
   for (uint8_t x = x_from; x < x_to; ++x)
     I2CMaster::Write(fill_mask);

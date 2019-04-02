@@ -20,16 +20,16 @@
 #include "tiny-i2c-master.h"
 #include "bdfont-support.h"
 
-// A super basic interface to the SSD1306 display that doesn't have any
+// A super basic interface to the SH1106 display that doesn't have any
 // frame-buffer (as the whole RAM of the attiny is just a fraction of what
 // would be needed for a full display of 64x128).
 //
 // Instead, we allow provide methods to directly dump out bytes stored in
 // progmem.
 // We use this to allow writing text to the display with compiled-in fonts.
-class SSD1306Display {
+class SH1106Display {
 public:
-  SSD1306Display();
+  SH1106Display();
 
   // Re-initialize.
   void Reset();
