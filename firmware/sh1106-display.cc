@@ -74,8 +74,6 @@ static void StartCommandTransmission() {
   I2CMaster::Write(COMMAND_TRANSFER);
 }
 
-static void StartDataTransmission() {
-}
 void SH1106Display::Reset() {
   SetOn(false);
 
