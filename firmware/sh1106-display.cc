@@ -22,23 +22,30 @@
 
 #include "utf8-iterator.h"
 
-static constexpr uint8_t REG_CONTRAST        = 0x81;
-static constexpr uint8_t REG_ENTIRE_ON       = 0xa4;
-static constexpr uint8_t REG_NORM_INV        = 0xa6;
-static constexpr uint8_t REG_DISP            = 0xae;
-static constexpr uint8_t REG_MEM_ADDR        = 0x20;
-static constexpr uint8_t REG_COL_ADDR        = 0x21;
-static constexpr uint8_t REG_PAGE_ADDR       = 0x22;
-static constexpr uint8_t REG_DISP_START_LINE = 0x40;
-static constexpr uint8_t REG_SEG_REMAP       = 0xa0;
-static constexpr uint8_t REG_COM_OUT_DIR     = 0xc0;
-static constexpr uint8_t REG_DISP_OFFSET     = 0xd3;
-static constexpr uint8_t REG_COM_PIN_CFG     = 0xda;
-static constexpr uint8_t REG_DISP_CLK_DIV    = 0xd5;
-static constexpr uint8_t REG_PRECHARGE       = 0xd9;
-static constexpr uint8_t REG_VCOM_DESEL      = 0xdb;
-static constexpr uint8_t REG_CHARGE_PUMP     = 0x8d;
+// SH1106 Datasheet pp19...31                          Command Table Entry
+// Configuration options.
+static constexpr uint8_t REG_DISP_START_LINE = 0x40;  // 4.   // memory layout
+static constexpr uint8_t REG_DISP_OFFSET     = 0xd3;  // 14.
 
+static constexpr uint8_t REG_SEG_REMAP       = 0xa0;  // 6.   // display flip
+static constexpr uint8_t REG_COM_OUT_DIR     = 0xc0;  // 13.
+
+static constexpr uint8_t REG_CHARGE_PUMP     = 0x8d;  // 10.  // hardware opts
+static constexpr uint8_t REG_DISP_CLK_DIV    = 0xd5;  // 15.
+static constexpr uint8_t REG_PRECHARGE       = 0xd9;  // 16.
+static constexpr uint8_t REG_COMMON_PADS_CFG = 0xda;  // 17.
+static constexpr uint8_t REG_VCOM_DESEL      = 0xdb;  // 18.
+
+static constexpr uint8_t REG_CONTRAST        = 0x81;  // 5.   // Visuals
+static constexpr uint8_t REG_ENTIRE_ON       = 0xa4;  // 7.
+static constexpr uint8_t REG_NORM_INV        = 0xa6;  // 8.
+static constexpr uint8_t REG_DISP_ONOFF      = 0xae;  // 11.
+
+static constexpr uint8_t REG_COLUMN_LOWER    = 0x00;  // 1.  // Updating
+static constexpr uint8_t REG_COLUMN_UPPER    = 0x10;  // 2.
+static constexpr uint8_t REG_PAGE_ADDRESS    = 0xB0;  // 12.
+
+// I2C command/data switch command
 static constexpr uint8_t COMMAND_TRANSFER = 0x00;
 static constexpr uint8_t DATA_TRANSFER    = 0x40;
 
@@ -48,7 +55,7 @@ static constexpr uint8_t SH1106_I2C_ADDRESS = DISPLAY_I2C;
 static constexpr uint8_t SH1106_I2C_ADDRESS = 0x78;
 #endif
 
-static constexpr bool upside_down = true;  // Rotate by 180 degrees.
+static constexpr bool upside_down = true;     // Rotate by 180 degrees.
 static constexpr bool external_vcc = false;
 
 #ifdef DISP_SSD1306
@@ -62,17 +69,24 @@ SH1106Display::SH1106Display() {
   Reset();
 }
 
+static void StartCommandTransmission() {
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
+  I2CMaster::Write(COMMAND_TRANSFER);
+}
+
+static void StartDataTransmission() {
+}
 void SH1106Display::Reset() {
   SetOn(false);
 
   // Init stuff.
   constexpr uint8_t h = 64;
-  static const uint8_t PROGMEM init_sequence[] = {
+  static constexpr uint8_t PROGMEM init_sequence[] = {
     REG_DISP_START_LINE,
+    REG_DISP_OFFSET, 0x00,
     REG_SEG_REMAP | (upside_down ? 0x01 : 0x00),
     REG_COM_OUT_DIR | (upside_down ? 0x08 : 0x00),
-    REG_DISP_OFFSET, 0x00,
-    REG_COM_PIN_CFG, h == 32 ? 0x02 : 0x12,
+    REG_COMMON_PADS_CFG, h == 32 ? 0x02 : 0x12,
     REG_DISP_CLK_DIV, 0x80,
     REG_PRECHARGE, external_vcc ? 0x22 : 0xf1,
     REG_VCOM_DESEL, 0x30,    // 0.83*Vcc
@@ -81,8 +95,7 @@ void SH1106Display::Reset() {
     REG_NORM_INV,            // not inverted
     REG_CHARGE_PUMP, external_vcc ? 0x10 : 0x14,
   };
-  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-  I2CMaster::Write(COMMAND_TRANSFER);
+  StartCommandTransmission();
   for (uint8_t i = 0; i < sizeof(init_sequence); ++i) {
     I2CMaster::Write(pgm_read_byte(&init_sequence[i]));
   }
@@ -93,49 +106,41 @@ void SH1106Display::Reset() {
 }
 
 void SH1106Display::SetOn(bool on) {
-  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-  I2CMaster::Write(COMMAND_TRANSFER);
-  I2CMaster::Write(REG_DISP | on);
+  StartCommandTransmission();
+  I2CMaster::Write(REG_DISP_ONOFF | on);
   I2CMaster::FinishTransmission();
+}
+
+static void StartPageTransmission(uint8_t x, uint8_t y_page) {
+  StartCommandTransmission();
+  const uint8_t start_pos = x + x_offset;
+  I2CMaster::Write(REG_PAGE_ADDRESS | y_page);              // row address
+  I2CMaster::Write(REG_COLUMN_LOWER | (start_pos & 0x0f));  // column nibbles
+  I2CMaster::Write(REG_COLUMN_UPPER | (start_pos >> 4));
+  I2CMaster::FinishTransmission();
+
+  // Open data transmission, to be finished by the caller.
+  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
+  I2CMaster::Write(DATA_TRANSFER);
 }
 
 void SH1106Display::ClearScreen() {
   for (uint8_t y = 0; y < 8; ++y) {
-    I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-    I2CMaster::Write(COMMAND_TRANSFER);
-    I2CMaster::Write(0xB0 | y);  // row address
-    I2CMaster::Write(0x00 | 2);  // col: 00
-    I2CMaster::Write(0x10 | 0);
-    I2CMaster::FinishTransmission();
-
-    I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-    I2CMaster::Write(DATA_TRANSFER);
+    StartPageTransmission(0, y);
     for (uint8_t i = 0; i < 128; ++i)
       I2CMaster::Write(0x00);
     I2CMaster::FinishTransmission();
   }
 }
 
-static void StartStripeTx(uint8_t stripe, uint8_t x_pos, uint8_t y_page) {
-  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-  I2CMaster::Write(COMMAND_TRANSFER);
-  const uint8_t start_pos = x_pos + x_offset;
-  I2CMaster::Write(0xB0 | (y_page + stripe));  // row address
-  I2CMaster::Write(0x00 | (start_pos & 0x0f));
-  I2CMaster::Write(0x10 | (start_pos >> 4));
-  I2CMaster::FinishTransmission();
-
-  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-  I2CMaster::Write(DATA_TRANSFER);
-}
-
 uint8_t SH1106Display::Print(const FontData &font,
-                              uint8_t xpos, const uint8_t ypos,
-                              const char *utf8_text) {
+                             uint8_t xpos, const uint8_t ypos,
+                             const char *utf8_text) {
+  const uint8_t y_page = ypos/8;
   while (*utf8_text) {
     const uint16_t cp = utf8_next_codepoint(utf8_text);
     xpos += BDFONT_EMIT_GLYPH(&font, cp, true,
-                              { StartStripeTx(stripe, xpos, ypos/8); },
+                              { StartPageTransmission(xpos, y_page + stripe); },
                               { I2CMaster::Write(b); },
                               { I2CMaster::FinishTransmission(); });
   }
@@ -144,18 +149,7 @@ uint8_t SH1106Display::Print(const FontData &font,
 
 void SH1106Display::FillStripeRange(uint8_t x_from, uint8_t x_to, uint8_t ypos,
                                      uint8_t fill_mask) {
-  uint8_t page = ypos / 8;
-  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-  I2CMaster::Write(COMMAND_TRANSFER);
-  const uint8_t start_pos = x_from + x_offset;
-  I2CMaster::Write(COMMAND_TRANSFER);
-  I2CMaster::Write(0xB0 | page);  // row address
-  I2CMaster::Write(0x00 | (start_pos & 0x0f));
-  I2CMaster::Write(0x10 | (start_pos >> 4));
-  I2CMaster::FinishTransmission();
-
-  I2CMaster::StartTransmission(SH1106_I2C_ADDRESS);
-  I2CMaster::Write(DATA_TRANSFER);
+  StartPageTransmission(x_from, ypos / 8);
   for (uint8_t x = x_from; x < x_to; ++x)
     I2CMaster::Write(fill_mask);
   I2CMaster::FinishTransmission();
