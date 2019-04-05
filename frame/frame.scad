@@ -18,7 +18,7 @@
 
 
 // The following variables are set in the makefile.
-print_quality=true;      // print quality: high-res, but slow to render.
+print_quality=false;      // print quality: high-res, but slow to render.
 version_id="git-hash";    // Identify version for easier re-print
 version_date="git-date";  // .. and date of that version.
 
