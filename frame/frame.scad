@@ -80,6 +80,9 @@ display_transition=10;   // Transition blend between dial and display box.
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
+
+squeeze_block_mount = false;  // Should we have an extra mount for squeeze block
+
 // TODO: Naming of these is confusing.
 bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_center_offset=bottom_mount_front_offset + 0;
@@ -406,8 +409,10 @@ module bottom_screw_punch() {
     translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
   }
 
-  // Center hole.
-  translate([0, -bottom_mount_center_offset, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
+  // Hole through the squeeze block. Optional.
+  if (squeeze_block_mount) {
+    translate([0, -bottom_mount_center_offset, 0]) m3_screw(len=screw_len, nut_at=stem_high/2, nut_channel=bottom_mount_front_offset);
+  }
 }
 
 // Screws needed to hold the stem in place
@@ -585,7 +590,9 @@ module leg_plate() {
       translate([bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
       translate([-bottom_mount_front_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
     }
-    translate([0, -bottom_mount_center_offset, -e]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+    if (squeeze_block_mount) {
+      translate([0, -bottom_mount_center_offset, -e]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+    }
     translate([0, -bottom_mount_front_display_offset, -e]) {
       translate([bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
       translate([-bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
