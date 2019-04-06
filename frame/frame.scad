@@ -45,6 +45,7 @@ leg_plate_radius=leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
 dial_cable_thick=1.5;   // Thickness of the data cables.
+dial_cable_wide = 6 * dial_cable_thick;  // 4-5 wires + little slack.
 dial_wall=dial_cable_thick+1;
 dial_thick=25.2;
 dial_stem_pos = 21.4-4;  // Position of stem from the frontface
@@ -82,6 +83,11 @@ display_transition=10;   // Transition blend between dial and display box.
 // display part.
 
 squeeze_block_mount = false;  // Should we have an extra mount for squeeze block
+squeeze_block_wide = 2 * stem_mount_screw_distance;
+
+cable_channel_from_bottom = 2.5;    // Cable slot access from the bottom.
+cable_channel_distance=squeeze_block_wide / 2;
+cable_channel_front_wide=3;
 
 // TODO: Naming of these is confusing.
 bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
@@ -193,17 +199,34 @@ module dial_holder() {
   rotate([90, 0, 0]) translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) cylinder(r=wall_r, h=dial_thick);
 }
 
+module dial_holder_cable_punch() {
+  connector_from_top=13;
+  wall_r = dial_dia/2 + dial_wall;
+  connector_angle_from_top=90
+    + 360 * (-dial_cable_wide - connector_from_top) / (dial_dia * PI);
+  connector_angle_width=360 * dial_cable_wide / (dial_dia * PI);
+  hull() {
+    bottom_wide=dial_cable_wide;
+    back_channel_depth=1.2*dial_cable_thick;
+    // Front channel access
+    translate([cable_channel_distance, -dial_stem_pos-e, cable_channel_from_bottom]) cube([cable_channel_front_wide, 1, stem_high+10]);
+
+    // Bottom back channel
+    translate([cable_channel_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, back_channel_depth, dial_cable_thick]);
+
+    // top channel between connector and back.
+    rotate([90, 0, 0])
+      translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos])
+      translate([0, 0, -back_channel_depth]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([dial_cable_thick, dial_thick+back_channel_depth]);
+  }
+}
+
 // Negative space to hold the dial and access holes for stem and cables.
 module dial_holder_punch(cable_slot=true) {
   extra=40;
-  cable_management_channel=dial_wall/2;
   wall_r =dial_dia/2 + dial_wall;
-  connector_wide=6 * dial_cable_thick;  // Only need 4, but let's have extra
   connector_from_top=13;
 
-  connector_angle_from_top=90
-    + 360 * (-connector_wide - connector_from_top) / (dial_dia * PI);
-  connector_angle_width=360 * connector_wide / (dial_dia * PI);
   rotate([90, 0, 0])
     translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos]) {
 
@@ -218,20 +241,7 @@ module dial_holder_punch(cable_slot=true) {
   stem_punch();
 
   // More punch for cable management: lead it out on the back into the slot
-  if (cable_slot) color("red") hull() {
-      bottom_wide=connector_wide;
-      back_channel_depth=1.2*dial_cable_thick;
-      // Front channel access
-      translate([stem_mount_screw_distance, -dial_stem_pos-e, dial_wall+stem_high/2]) cube([3, 1, stem_high+10]);
-
-      // Bottom back channel
-      translate([stem_mount_screw_distance-bottom_wide/2, dial_thick-dial_stem_pos, dial_wall+7]) cube([bottom_wide, back_channel_depth, dial_cable_thick]);
-
-      // top channel between connector and back.
-      rotate([90, 0, 0])
-        translate([0, wall_r+stem_high, -dial_thick+dial_stem_pos])
-        translate([0, 0, -back_channel_depth]) rotate([0, 0, connector_angle_from_top]) rotate_extrude(angle=connector_angle_width, convexity=2) translate([dial_dia/2, 0, 0]) square([dial_cable_thick, dial_thick+back_channel_depth]);
-    }
+  if (cable_slot) color("red") dial_holder_cable_punch();
 }
 
 // Punching space for direction battery pictogram and +/- designations.
@@ -297,7 +307,11 @@ module battery_box_punch() {
     lug_thick=0.5;
     lug_wide=6;
     translate([0, 0, aa_wall+lug_thick/2]) cube([aa_dist+2, lug_wide, lug_thick], center=true);
-    translate([0, 0, aa_len+aa_wall-lug_thick/2]) cube([aa_dist+2, lug_wide, lug_thick], center=true);
+    // Don't bridge all the way. All we want to do is to add a cavity that then
+    // has to be opened up again. But this way we get a multi-wall surrounded
+    // cavity while filament bridging is not impaired too much.
+    translate([0, 0, aa_len+aa_wall-lug_thick/2])
+      cube([aa_dist-2, lug_wide, lug_thick], center=true);
     translate([-(aa_dist/2+aa_dia), 0, aa_wall+lug_thick/2]) cube([5, lug_wide, lug_thick], center=true);
 
     // Cable for 1.5V tap.
@@ -389,7 +403,7 @@ module battery_power_punch() {
   hull() {
     translate([-aa_dist-8, aa_wall, aa_wall+cable_radius]) rotate([90, 0, 0])
       scale([wide_factor, 1, 1]) cylinder(r=cable_radius, h=1);
-    translate([-stem_mount_screw_distance-cable_radius, -dial_thick-1, stem_high/2+aa_wall]) cube([3, 1, stem_high+35]);
+    translate([-cable_channel_distance-cable_channel_front_wide, -dial_thick-1, cable_channel_from_bottom]) cube([cable_channel_front_wide, 1, stem_high+20]);
   }
 }
 
@@ -472,8 +486,7 @@ module spherometer_frame_main_block() {
 
 // Separating behind and front of dial.
 module stem_squeeze_block_separator(is_inside=false) {
-  // TODO: calculate base-width from other values.
-  w=32 - (is_inside ? 2*fit_tolerance : 0);
+  w=squeeze_block_wide - (is_inside ? 2*fit_tolerance : 0);
   translate([-w/2, -100, -e]) cube([w, 100, stem_high+dial_wall+8]);
 }
 
@@ -558,10 +571,10 @@ module display_case_punch() {
   }
 }
 
-module display_cable_channel_punch(at_x) {
+module display_cable_channel_punch(at_x, wide) {
   translate([at_x, e, -e]) hull() {
-    translate([0, -base_dia/2-display_transition,0]) cube([3, e, e]);
-    translate([0, -base_dia/2, 0]) cube([3, e, stem_high+5]);
+    translate([-wide/2, -base_dia/2-display_transition,0]) cube([wide, e, e]);
+    translate([-wide/2, -base_dia/2, 0]) cube([wide, e, stem_high+5]);
   }
 }
 
@@ -573,8 +586,9 @@ module display_part() {
     }
     display_case_punch();
     // Channels for the cable
-    display_cable_channel_punch(stem_mount_screw_distance);
-    display_cable_channel_punch(-stem_mount_screw_distance-1.5);
+    w = cable_channel_front_wide;
+    display_cable_channel_punch(cable_channel_distance+w/2, w);
+    display_cable_channel_punch(-cable_channel_distance-w/2, w);
   }
 }
 
