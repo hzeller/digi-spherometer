@@ -40,7 +40,7 @@ leg_radius=50;
 leg_plate_thick=12.7;    // Thickness of the acrylic used.
 leg_ball_dia=12.7;
 leg_ball_hole_dia=8;
-leg_plate_rim=5;         // Extra acrylic beyond the legs.
+leg_plate_rim=7;         // Extra acrylic beyond the legs.
 leg_plate_radius=leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
@@ -56,7 +56,9 @@ dial_cable_pos=12;   // Position of the cable channel from the front
 stem_dia=8;                       // Stem of the meter
 stem_bushing_len=21.5;            // How long is the stem bushing
 stem_high=stem_bushing_len - leg_plate_thick - dial_wall;
-stem_mount_screw_distance=stem_dia + 8;  // Close for good clamp action.
+// Mount distance is at least one M3 diameter (2*half an M3), plus some distance
+// right and left.
+stem_mount_screw_distance=stem_dia + 3 + 2*1.5;
 
 // Battery sizes
 aa_dia=14.5 + 2*fit_tolerance;
@@ -74,28 +76,30 @@ base_dia=dial_stem_pos*2;
 
 display_wall_thick=1.5;
 display_top_wall=0.8;    // Front face a little thinner to have display close.
-display_wide=55;         // Mostly determined by electronics size.
-display_high=33;
-display_box_thick=11;    // Large enough to house electronics.
+display_wide=52;         // Mostly determined by electronics size and screws.
+display_high=36;
+display_box_thick=10;    // Large enough to house electronics.
 display_transition=10;   // Transition blend between dial and display box.
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
 
-squeeze_block_mount = false;  // Should we have an extra mount for squeeze block
+// The Squeeze-block is the block squeezing in the stem.
+squeeze_block_mount = false;  // Should we have an extra mount hole for sq-block
 squeeze_block_wide = 2 * stem_mount_screw_distance;
 
 cable_channel_from_bottom = 2.5;    // Cable slot access from the bottom.
 cable_channel_distance=squeeze_block_wide / 2;
 cable_channel_front_wide=3;
 
+front_width=squeeze_block_wide + 2*cable_channel_front_wide + 2*m3_nut_dia + 4;
 // TODO: Naming of these is confusing.
 bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_center_offset=bottom_mount_front_offset + 0;
-bottom_mount_front_distance=display_wide - 8;  // right/left distance.
+bottom_mount_front_distance=front_width - 8;  // right/left distance.
 
-bottom_mount_front_display_offset=base_dia/2+display_high-display_wall_thick-m3_nut_dia/2;
-bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - m3_nut_dia;
+bottom_mount_front_display_offset=base_dia/2+display_high-display_wall_thick-m3_nut_dia/2 - 14;
+bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - m3_nut_dia - 2;
 
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
 bottom_mount_back_distance=display_wide - 13;  // right/left distance.
@@ -146,9 +150,9 @@ module sine_wiggle(wiggle_count=3, len=20, height=2, resolution=0.01) {
 // direction.
 // To use in different corners, it is probably easiest to mirror it (
 // using scale around the origin).
-module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
+module champfer_point_cloud(height=display_box_thick, side_x=3, side_y=8) {
   a=0.1;
-  f=2;
+  f=0;  // front champfer
   cube([a, a, a]);
   translate([0, side_y, height]) cube([a, a, a]);
   translate([side_x, f, height]) cube([a, a, a]);
@@ -159,12 +163,20 @@ module champfer_point_cloud(height=display_box_thick, side_x=6, side_y=15) {
 // Poking through top (view display and button) and bottom.
 module electronics_punch() {
   extra=0.5;
-  w=42+2*extra;
-  h=29+2*extra;
-  translate([-w/2, -h, -15+e]) cube([w, h, 15]);  // PCB size
+  w=36+2*extra;
+  h=34+2*extra;
+  translate([-w/2, -h, -10+e]) cube([w, h, 10]);  // PCB size
   // Display
-  translate([-w/2+extra, -h+extra+5, 0]) color("blue") cube([28, 16, 10]);
-  translate([w/2-extra-6, -16, 0]) cylinder(r=7/2, h=10);  // Button.
+  dw=32;
+  dh=17.5;
+  translate([0, -dh/2-6.5, 5-e]) color("blue") cube([dw, dh, 10], center=true);
+  translate([w/2-e, -h+6, -10]) {
+    translate([0, -4.5, 0]) hull() {
+      cube([5, 8, 7]);
+      translate([0, 15, 0]) cube([e, e, 7]);
+    }
+    translate([5-e, 0, 3.5]) rotate([0, 90, 0]) cylinder(r=4/2, h=4);
+  }
 }
 
 // Stem of indicator.
@@ -176,9 +188,9 @@ module stem_punch() {
 // Base where everything is sitting on the bottom.
 module base(with_front_flat=true) {
   scale([1, 1, 1]) cylinder(r=base_dia/2, h=0.8);
-  translate([-display_wide/2, -base_dia/2, 0]) cube([display_wide, base_dia/2, 2]);
+  translate([-front_width/2, -base_dia/2, 0]) cube([front_width, base_dia/2, 2]);
   if (with_front_flat) {
-    translate([-display_wide/2, -base_dia/2, 0]) cube([display_wide, 1, stem_high]);
+    translate([-front_width/2, -base_dia/2, 0]) cube([front_width, 1, stem_high]);
   }
 }
 
@@ -562,7 +574,9 @@ module display_case() {
 }
 
 module display_case_punch() {
-  translate([0, -base_dia/2-1, display_box_thick-display_top_wall]) electronics_punch();
+  have_wall = false;  // Separating wall. A little more rigidity if true.
+  local_offset = have_wall ? 1 : -2*e;
+  translate([0, -base_dia/2 - local_offset, display_box_thick-display_top_wall]) electronics_punch();
 
   // Screws at the very front to hold down display.
   translate([0, -bottom_mount_front_display_offset, 0]) {
@@ -648,5 +662,5 @@ if (true) {
   color("red") render() spherometer_frame_stem_squeeze_block();
   color("yellow") render() spherometer_frame_main_block();
   color("blue") translate([0, 1*20, 0]) render() spherometer_frame_battery_lid();
-  color("gray") translate([0, -1*10, 0]) render() display_part();
+  color("gray") translate([0, -0*10, 0]) render() display_part();
 }
