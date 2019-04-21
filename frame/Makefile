@@ -19,7 +19,7 @@ all: $(TARGETS)
 
 fab/%.scad : frame.scad
 	mkdir -p fab
-	echo "use <frame.scad>; $*();" > $@
+	echo "use <../frame.scad>; $*();" > $@
 
 clean:
 	rm -f $(TARGETS)
