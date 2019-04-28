@@ -836,7 +836,7 @@
     )
   )
 
-  (gr_text "© 2019 CC-BY-SA\nHenner Zeller" (at 72.009 67.564) (layer B.SilkS) (tstamp 5CC5CAD6)
+  (gr_text "© 2019 CC-BY-SA\nHenner Zeller" (at 72.136 68.326) (layer B.SilkS) (tstamp 5CC5CAD6)
     (effects (font (size 0.8 0.8) (thickness 0.12)) (justify mirror))
   )
   (gr_text github.com/hzeller/digi-spherometer (at 82.804 60.325) (layer B.SilkS) (tstamp 5CC5BD06)
