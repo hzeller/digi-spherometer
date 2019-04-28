@@ -17,12 +17,12 @@ $EndDescr
 $Comp
 L Device:Q_NPN_BEC Q2
 U 1 1 5C7BA6FA
-P 2750 4050
-F 0 "Q2" H 2941 4096 50  0000 L CNN
-F 1 "NPN" H 2941 4005 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 2950 4150 50  0001 C CNN
-F 3 "" H 2750 4050 50  0001 C CNN
-	1    2750 4050
+P 2750 3400
+F 0 "Q2" H 2941 3446 50  0000 L CNN
+F 1 "NPN" H 2941 3355 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 2950 3500 50  0001 C CNN
+F 3 "" H 2750 3400 50  0001 C CNN
+	1    2750 3400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -129,34 +129,28 @@ F 3 "" H 3850 2450 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2850 3200 3450 3200
-Wire Wire Line
 	2850 3850 3200 3850
-Wire Wire Line
-	3200 3850 3200 3300
-Wire Wire Line
-	3200 3300 3450 3300
 $Comp
 L Device:Q_NPN_BEC Q1
 U 1 1 5C7C80D0
-P 2750 3400
-F 0 "Q1" H 2941 3446 50  0000 L CNN
-F 1 "NPN" H 2941 3355 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 2950 3500 50  0001 C CNN
-F 3 "" H 2750 3400 50  0001 C CNN
-	1    2750 3400
+P 2750 4050
+F 0 "Q1" H 2941 4096 50  0000 L CNN
+F 1 "NPN" H 2941 4005 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 2950 4150 50  0001 C CNN
+F 3 "" H 2750 4050 50  0001 C CNN
+	1    2750 4050
 	1    0    0    -1  
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x04 J2
 U 1 1 5C7C8F49
-P 2050 2200
-F 0 "J2" V 2050 2500 50  0000 R CNN
-F 1 "Indicator" V 1950 2700 50  0000 R CNN
-F 2 "Connector_JST:JST_PH_S4B-PH-K_1x04_P2.00mm_Horizontal" H 2050 2200 50  0001 C CNN
-F 3 "~" H 2050 2200 50  0001 C CNN
-	1    2050 2200
-	0    -1   -1   0   
+P 2150 2200
+F 0 "J2" V 2150 1900 50  0000 R CNN
+F 1 "Indicator" V 2050 1900 50  0000 R CNN
+F 2 "Connector_JST:JST_PH_S4B-PH-K_1x04_P2.00mm_Horizontal" H 2150 2200 50  0001 C CNN
+F 3 "~" H 2150 2200 50  0001 C CNN
+	1    2150 2200
+	0    1    -1   0   
 $EndComp
 $Comp
 L power:GND #PWR0108
@@ -172,23 +166,23 @@ $EndComp
 $Comp
 L Device:R R1
 U 1 1 5C7CA7C5
-P 2400 3400
-F 0 "R1" V 2400 3400 50  0000 C CNN
-F 1 "47k" V 2500 3400 50  0000 C CNN
-F 2 "Resistor_SMD:R_0603_1608Metric" V 2330 3400 50  0001 C CNN
-F 3 "" H 2400 3400 50  0001 C CNN
-	1    2400 3400
+P 2400 4050
+F 0 "R1" V 2400 4050 50  0000 C CNN
+F 1 "47k" V 2500 4050 50  0000 C CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 2330 4050 50  0001 C CNN
+F 3 "" H 2400 4050 50  0001 C CNN
+	1    2400 4050
 	0    1    1    0   
 $EndComp
 $Comp
 L Device:R R2
 U 1 1 5C7CB12C
-P 2400 4050
-F 0 "R2" V 2400 4050 50  0000 C CNN
-F 1 "47k" V 2500 4050 50  0000 C CNN
-F 2 "Resistor_SMD:R_0603_1608Metric" V 2330 4050 50  0001 C CNN
-F 3 "" H 2400 4050 50  0001 C CNN
-	1    2400 4050
+P 2400 3400
+F 0 "R2" V 2400 3400 50  0000 C CNN
+F 1 "47k" V 2500 3400 50  0000 C CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 2330 3400 50  0001 C CNN
+F 3 "" H 2400 3400 50  0001 C CNN
+	1    2400 3400
 	0    1    1    0   
 $EndComp
 Wire Wire Line
@@ -268,13 +262,13 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x04 J3
 U 1 1 5CBCFE92
-P 2700 2200
-F 0 "J3" V 2700 1900 50  0000 R CNN
-F 1 "Disp" V 2600 1950 50  0000 R CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 2700 2200 50  0001 C CNN
-F 3 "~" H 2700 2200 50  0001 C CNN
-	1    2700 2200
-	0    -1   -1   0   
+P 2800 2200
+F 0 "J3" V 2800 2500 50  0000 R CNN
+F 1 "Disp" V 2700 2550 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 2800 2200 50  0001 C CNN
+F 3 "~" H 2800 2200 50  0001 C CNN
+	1    2800 2200
+	0    1    -1   0   
 $EndComp
 Wire Wire Line
 	3450 3400 3300 3400
@@ -291,12 +285,12 @@ Connection ~ 4950 2600
 $Comp
 L Jumper:SolderJumper_2_Open JP1
 U 1 1 5CC4FCB3
-P 2450 3200
-F 0 "JP1" H 2250 3400 50  0000 C CNN
-F 1 "OC Direct" H 2350 3300 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 2450 3200 50  0001 C CNN
-F 3 "~" H 2450 3200 50  0001 C CNN
-	1    2450 3200
+P 2450 3850
+F 0 "JP1" H 2250 4050 50  0000 C CNN
+F 1 "OC Direct" H 2350 3950 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 2450 3850 50  0001 C CNN
+F 3 "~" H 2450 3850 50  0001 C CNN
+	1    2450 3850
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -306,16 +300,15 @@ Wire Wire Line
 	2150 3200 2150 3400
 Wire Wire Line
 	2600 3200 2850 3200
-Connection ~ 2850 3200
 $Comp
 L Jumper:SolderJumper_2_Open JP2
 U 1 1 5CC51175
-P 2450 3850
-F 0 "JP2" H 2250 4050 50  0000 C CNN
-F 1 "OC Direct" H 2350 3950 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 2450 3850 50  0001 C CNN
-F 3 "~" H 2450 3850 50  0001 C CNN
-	1    2450 3850
+P 2450 3200
+F 0 "JP2" H 2250 3400 50  0000 C CNN
+F 1 "OC Direct" H 2350 3300 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 2450 3200 50  0001 C CNN
+F 3 "~" H 2450 3200 50  0001 C CNN
+	1    2450 3200
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -374,8 +367,8 @@ Wire Wire Line
 	3200 2450 3200 3000
 Wire Wire Line
 	3200 3000 3450 3000
-Text Notes 3200 4300 0    50   ~ 0
-Use OC Direct jumpers for\nindicators that already have OpenCollector\noutput, e.g. Mitutoyo
+Text Notes 3200 4350 0    50   ~ 0
+Use OC Direct jumpers for\nindicators that already have OpenCollector\noutput, e.g. Mitutoyo\nThen R1, R2, Q1, Q2 are not needed.
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 5CC6966C
@@ -441,4 +434,15 @@ Text Label 2150 2900 0    50   ~ 0
 Data
 Text Label 2050 2900 2    50   ~ 0
 Clock
+Wire Wire Line
+	2850 3200 3100 3200
+Wire Wire Line
+	3100 3200 3100 3300
+Wire Wire Line
+	3100 3300 3450 3300
+Connection ~ 2850 3200
+Wire Wire Line
+	3200 3850 3200 3200
+Wire Wire Line
+	3200 3200 3450 3200
 $EndSCHEMATC
