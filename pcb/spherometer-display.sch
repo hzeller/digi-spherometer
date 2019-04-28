@@ -110,12 +110,12 @@ $Comp
 L Switch:SW_Push SW1
 U 1 1 5C7C2518
 P 3650 2450
-F 0 "SW1" H 4150 2550 50  0000 C CNN
-F 1 "UI-Button" H 4150 2450 50  0000 C CNN
+F 0 "SW1" H 3450 2600 50  0000 C CNN
+F 1 "UI-Button" H 3300 2500 50  0000 C CNN
 F 2 "digi-spherometer:EVPAV-Switch" H 3650 2650 50  0001 C CNN
 F 3 "" H 3650 2650 50  0001 C CNN
 	1    3650 2450
-	1    0    0    -1  
+	-1   0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR0107

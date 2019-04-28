@@ -6,6 +6,7 @@
 *.dxf
 *.3mf
 *bak
+*-fab*
 frame-generated-*
 compiler-flags
 
