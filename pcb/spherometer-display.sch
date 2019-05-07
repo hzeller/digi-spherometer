@@ -97,7 +97,7 @@ U 1 1 5C7C0CD1
 P 4050 3200
 F 0 "U1" H 3650 3450 50  0000 C CNN
 F 1 "ATTINY85V-10SU" H 3900 3350 50  0000 C CNN
-F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 5000 3200 50  0001 C CIN
+F 2 "Package_SO:SOIC-8_5.23x5.23mm_P1.27mm" H 5000 3200 50  0001 C CIN
 F 3 "http://www.atmel.com/images/atmel-2586-avr-8-bit-microcontroller-attiny25-attiny45-attiny85_datasheet.pdf" H 4050 3200 50  0001 C CNN
 	1    4050 3200
 	-1   0    0    -1  
