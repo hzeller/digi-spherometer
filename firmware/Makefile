@@ -13,6 +13,9 @@ DEFINES=-DF_CPU=8000000UL
 # (Note, you typically don't want a device with such rough resolution)
 #DEFINES+=-DINDICATOR_DECIMALS=3
 
+# If indicator is a Mitutoyo, add this
+#DEFINES+=-DINDICATOR_MITUTOYO
+
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
 

@@ -33,10 +33,27 @@
 #include "font-smalltext.h"
 #include "font-tinytext.h"
 
-// Choose reading function of dial indicator here.
-// (only  indicator we support right now is autolet, but we could have a
-// conditional include here)
-#include "autoutlet-dial-indicator.h"
+// The data to be filled by the indicator-reading function.
+struct DialData {
+  int32_t abs_value;  // Absolute value in 1/1000mm or 1/10000"
+  bool negative;      // true if the value is negative.
+  bool is_imperial;   // Reading is in imperial units
+};
+
+// The dial indicator header needs to provide this function.
+// Given the clk_bit and data_bit to read from PINB, read the data and write
+// the result to "data".
+// Return 'true' if successful, 'false' if indicator is not sending data (i.e.
+// is switched off).
+static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
+                                     DialData *data);
+
+// Choose dial indicator implementation here.
+#ifdef INDICATOR_MITUTOYO
+#  include "dial-indicator-mitutoyo.h"
+#else
+#  include "dial-indicator-autoutlet.h"
+#endif
 
 // ------------------------------ configurable parameters ------------
 // Distance center to feet. Radius of the Spherometer-feet circle.
@@ -191,7 +208,7 @@ void ShowFocusPage(SH1106Display *disp, const MeasureData &m, int page) {
   }
 
   // Show 'scrollbar'. We have two pages, so show a bright bar going down.
-  for (int i = 0; i < 4; ++i) {
+  for (uint8_t i = 0; i < 4; ++i) {
     disp->FillStripeRange(127, 128, (i+4*page)*8, 0xff);
   }
 }
@@ -208,15 +225,45 @@ int main() {
   SH1106Display disp;
   Button button;
 
-  DialData last_dial;
+  DialData last_dial = {};
   uint8_t last_page = 0xff;  // outside range, so guaranteed not seen before.
 
-  uint32_t off_cycles = 0;
+  uint8_t off_cycles = 0;
   uint8_t display_page = 0;
 
-  constexpr uint32_t kPowerOffAfterCycles = 150;
+  constexpr uint8_t kPowerOffAfterCycles = 50;
+  constexpr uint8_t kStartShowingOutro = 4;
+  DialData dial = {};
   for (;;) {
-    DialData dial = ReadDialIndicator(CLK_BIT, DATA_BIT);
+    const bool indicator_on = ReadDialIndicator(CLK_BIT, DATA_BIT, &dial);
+
+    // If the dial indicator is off, we watch this for a while. After
+    // kPowerOffAfterCycles, we go to deep sleep. In the time between
+    // we detect the indicator to be off and going to sleep, we show the
+    // github message on the display for people to find the project.
+    if (!indicator_on)
+      off_cycles++;
+    else
+      off_cycles = 0;
+
+    if (off_cycles == kStartShowingOutro) {
+      disp.ClearScreen();
+      last_page = 0xff;   // Make sure anything after "off" forces ClearScreen.
+      disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
+      disp.Print(font_tinytext, 0, 16, "github hzeller/");
+      disp.Print(font_tinytext, 0, 32, "digi-spherometer");
+      disp.Print(font_tinytext, 0, 48, "    GNU GPL");
+    }
+    else if (off_cycles > kPowerOffAfterCycles) {
+      disp.SetOn(false);
+      SleepTillDialIndicatorClocksAgain();
+      // ... We're here after wakeup
+      disp.Reset();      // Might've slept a long time. Make sure OK.
+      display_page = 0;  // Go back to radius page after waking up.
+    }
+
+    if (off_cycles)
+      continue;
 
     if (button.clicked()) {
       display_page += 1;
@@ -224,39 +271,14 @@ int main() {
       disp.ClearScreen();
     }
 
-    // If the dial indicator is off, we watch this for a while. After
-    // kPowerOffAfterCycles, we go to deep sleep. In the time between
-    // we detect the indicator to be off and going to sleep, we show the
-    // github message on the display for people to find.
-    if (dial.off)
-      off_cycles++;
-    else
-      off_cycles = 0;
-
-    if (off_cycles > kPowerOffAfterCycles) {
-      disp.SetOn(false);
-      SleepTillDialIndicatorClocksAgain();
-      disp.Reset();      // Might've slept a long time. Make sure OK.
-      last_page = 0xff;
-      display_page = 0;  // Go back to radius page after waking up.
-    }
-
-    if (last_dial.off != dial.off
+    if (last_page != display_page
         || last_dial.negative != dial.negative
         || last_dial.is_imperial != dial.is_imperial
         || is_flat(last_dial.abs_value) != is_flat(dial.abs_value)) {
       disp.ClearScreen();  // Visuals will change. Clean-slatify.
     }
 
-    if (dial.off) {
-      if (!last_dial.off) {  // Only need to write if we just got here.
-        disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
-        disp.Print(font_tinytext, 0, 16, "github hzeller/");
-        disp.Print(font_tinytext, 0, 32, "digi-spherometer");
-        disp.Print(font_tinytext, 0, 48, "    GNU GPL");
-      }
-    }
-    else if (is_flat(dial.abs_value)) {
+    if (is_flat(dial.abs_value)) {
       disp.Print(font_smalltext, 48, 0, "flat");
       disp.Print(font_bignumber, 34, 16, "OK");
     }
@@ -272,7 +294,7 @@ int main() {
     else {
       // micrometer units or 0.00001" units. Imperial increments in steps of 5
       MeasureData prepared_data;
-      int32_t value = dial.is_imperial ? dial.abs_value * 5 : dial.abs_value;
+      const int32_t value = dial.abs_value;
       prepared_data.raw_sag = value;
       prepared_data.imperial = dial.is_imperial;
       const float sag = dial.is_imperial ? value / raw2inch : value / raw2mm;

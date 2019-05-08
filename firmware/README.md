@@ -73,6 +73,9 @@ command-line, see [Makefile](./Makefile).
 make USER_DEFINES="-DDISPLAY_I2C=0x78 -DINDICATOR_DECIMALS=3" flash
 ```
 
+The default compile works with the Autoutlet dial indicator. If you use a
+Mitutoyo indicator, add `-DINDICATOR_MITUTOYO` to your `USER_DEFINES`.
+
 ![](../img/spherometer-devel.jpg)
 
 [attiny85]: https://www.microchip.com/wwwproducts/en/ATtiny85
