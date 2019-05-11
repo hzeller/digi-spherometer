@@ -112,7 +112,7 @@ U 1 1 5C7C2518
 P 3650 2450
 F 0 "SW1" H 3450 2600 50  0000 C CNN
 F 1 "UI-Button" H 3300 2500 50  0000 C CNN
-F 2 "digi-spherometer:EVPAV-Switch" H 3650 2650 50  0001 C CNN
+F 2 "digi-spherometer:EVQP7-Switch" H 3650 2650 50  0001 C CNN
 F 3 "" H 3650 2650 50  0001 C CNN
 	1    3650 2450
 	-1   0    0    -1  
@@ -144,13 +144,13 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x04 J2
 U 1 1 5C7C8F49
-P 2150 2200
-F 0 "J2" V 2150 1900 50  0000 R CNN
-F 1 "Indicator" V 2050 1900 50  0000 R CNN
-F 2 "Connector_JST:JST_PH_S4B-PH-K_1x04_P2.00mm_Horizontal" H 2150 2200 50  0001 C CNN
-F 3 "~" H 2150 2200 50  0001 C CNN
-	1    2150 2200
-	0    1    -1   0   
+P 2050 2200
+F 0 "J2" V 2050 2500 50  0000 R CNN
+F 1 "Indicator" V 1950 2750 50  0000 R CNN
+F 2 "digi-spherometer:connect-edge-4slot-2mm" H 2050 2200 50  0001 C CNN
+F 3 "~" H 2050 2200 50  0001 C CNN
+	1    2050 2200
+	0    -1   -1   0   
 $EndComp
 $Comp
 L power:GND #PWR0108
@@ -199,10 +199,10 @@ U 1 1 5C7CC029
 P 1300 2750
 F 0 "J1" H 1300 2550 50  0000 C CNN
 F 1 "Battery" H 1500 2650 50  0000 C CNN
-F 2 "Connector_JST:JST_PH_S3B-PH-K_1x03_P2.00mm_Horizontal" H 1300 2750 50  0001 C CNN
+F 2 "digi-spherometer:connect-edge-3slot-2mm" H 1300 2750 50  0001 C CNN
 F 3 "~" H 1300 2750 50  0001 C CNN
 	1    1300 2750
-	-1   0    0    1   
+	-1   0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR0109
