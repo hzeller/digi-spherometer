@@ -2,7 +2,7 @@
 
   (general
     (thickness 0.8)
-    (drawings 57)
+    (drawings 62)
     (tracks 215)
     (zones 0)
     (modules 14)
@@ -11,8 +11,8 @@
 
   (page A4)
   (layers
-    (0 F.Cu signal)
-    (31 B.Cu signal)
+    (0 F.Cu signal hide)
+    (31 B.Cu signal hide)
     (32 B.Adhes user)
     (33 F.Adhes user)
     (34 B.Paste user)
@@ -636,6 +636,21 @@
     )
   )
 
+  (gr_text MO (at 78.6 67.7) (layer B.SilkS) (tstamp 5CD6EB52)
+    (effects (font (size 0.7 0.7) (thickness 0.1)) (justify mirror))
+  )
+  (gr_text RST (at 76.2 67.7) (layer B.SilkS) (tstamp 5CD6EB51)
+    (effects (font (size 0.7 0.7) (thickness 0.1)) (justify mirror))
+  )
+  (gr_text GND (at 86.3 67.7) (layer B.SilkS) (tstamp 5CD6EB50)
+    (effects (font (size 0.7 0.7) (thickness 0.1)) (justify mirror))
+  )
+  (gr_text SCK (at 83.7 67.7) (layer B.SilkS) (tstamp 5CD6EB4F)
+    (effects (font (size 0.7 0.7) (thickness 0.1)) (justify mirror))
+  )
+  (gr_text MI (at 81.1 67.7) (layer B.SilkS) (tstamp 5CD6EB4E)
+    (effects (font (size 0.7 0.7) (thickness 0.1)) (justify mirror))
+  )
   (gr_text "Clearance for\nOLED components" (at 89.3 66.2 90) (layer Cmts.User)
     (effects (font (size 0.6 0.6) (thickness 0.1)))
   )
