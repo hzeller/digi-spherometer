@@ -99,12 +99,7 @@ bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_center_offset=bottom_mount_front_offset + 0;
 bottom_mount_front_distance=front_width - 8;  // right/left distance.
 
-// TODO: this needs to move a bit forward, but for the current pre-cut acrylic
-// this is it.
-bottom_mount_front_display_offset=base_dia/2+display_high-display_wall_thick-m3_nut_dia/2 - 14;
-bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - m3_nut_dia - 2;
-
-// Center screw in front.
+// Center screw in display-front.
 bottom_mount_front_display_center_offset=leg_plate_radius - 7;
 
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
@@ -611,11 +606,7 @@ module display_case_punch() {
   local_offset = have_wall ? 1 : -2*e;
   translate([0, -base_dia/2 - local_offset, display_box_thick-display_top_wall]) display_electronics_punch();
 
-  // Screws at the very front to hold down display.
-  translate([0, -bottom_mount_front_display_offset, 0]) {
-    translate([bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, -60]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
-    translate([-bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, 90]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
-  }
+  // Screw at the very front to hold down display.
   translate([0, -bottom_mount_front_display_center_offset, 0]) rotate([0, 0, 150]) m3_screw(len=display_box_thick-3, nut_at=1, nut_channel=10);
 }
 
@@ -694,9 +685,8 @@ module leg_plate() {
     if (squeeze_block_mount) {
       translate([0, -bottom_mount_center_offset, -e]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
     }
-    translate([0, -bottom_mount_front_display_offset, -e]) {
-      translate([bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
-      translate([-bottom_mount_front_display_distance/2, 0, 0]) cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
+    translate([0, -bottom_mount_front_display_center_offset, -e]) {
+      cylinder(r=m3_dia/2, h=leg_plate_thick+2*e);
     }
 
     //translate([0, 0, -1]) bottom_screw_punch();
