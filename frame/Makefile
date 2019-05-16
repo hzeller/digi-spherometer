@@ -1,7 +1,8 @@
 TARGETS=fab/spherometer_frame_main_block.stl \
         fab/spherometer_frame_stem_squeeze_block.stl \
         fab/spherometer_frame_battery_lid.stl \
-        fab/display_part.stl \
+        fab/display_front_part.stl fab/display_transition_part.stl \
+	fab/display_case_button.stl \
         fab/leg_plate_2d.dxf
 
 
