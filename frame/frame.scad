@@ -78,8 +78,9 @@ display_wall_thick=1.5;
 display_top_wall=0.8;    // Front face a little thinner to have display close.
 display_wide=52;         // Mostly determined by electronics size and screws.
 display_high=36;
-display_box_thick=10;    // Large enough to house electronics.
-display_transition=10;   // Transition blend between dial and display box.
+display_box_thick=7.5;    // Large enough to house electronics.
+display_transition=7;   // Transition blend between dial and display box.
+display_button_from_top=10.11;
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
@@ -98,8 +99,13 @@ bottom_mount_front_offset=10;  // Bottom screws. Offset from center to back.
 bottom_mount_center_offset=bottom_mount_front_offset + 0;
 bottom_mount_front_distance=front_width - 8;  // right/left distance.
 
+// TODO: this needs to move a bit forward, but for the current pre-cut acrylic
+// this is it.
 bottom_mount_front_display_offset=base_dia/2+display_high-display_wall_thick-m3_nut_dia/2 - 14;
 bottom_mount_front_display_distance=display_wide - 2*display_wall_thick - m3_nut_dia - 2;
+
+// Center screw in front.
+bottom_mount_front_display_center_offset=leg_plate_radius - 7;
 
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
 bottom_mount_back_distance=display_wide - 13;  // right/left distance.
@@ -151,32 +157,12 @@ module sine_wiggle(wiggle_count=3, len=20, height=2, resolution=0.01) {
 // To use in different corners, it is probably easiest to mirror it (
 // using scale around the origin).
 module champfer_point_cloud(height=display_box_thick, side_x=3, side_y=8) {
-  a=0.1;
+  a=e;
   f=0;  // front champfer
   cube([a, a, a]);
   translate([0, side_y, height]) cube([a, a, a]);
   translate([side_x, f, height]) cube([a, a, a]);
   translate([side_x, 0, height-f]) cube([a, a, a]);
-}
-
-// The electronics, display and button. Space it needs inside its casing.
-// Poking through top (view display and button) and bottom.
-module electronics_punch() {
-  extra=0.5;
-  w=36+2*extra;
-  h=34+2*extra;
-  translate([-w/2, -h, -10+e]) cube([w, h, 10]);  // PCB size
-  // Display
-  dw=32;
-  dh=17.5;
-  translate([0, -dh/2-6.5, 5-e]) color("blue") cube([dw, dh, 10], center=true);
-  translate([w/2-e, -h+6, -10]) {
-    translate([0, -4.5, 0]) hull() {
-      cube([5, 8, 7]);
-      translate([0, 15, 0]) cube([e, e, 7]);
-    }
-    translate([5-e, 0, 3.5]) rotate([0, 90, 0]) cylinder(r=4/2, h=4);
-  }
 }
 
 // Stem of indicator.
@@ -525,11 +511,13 @@ module spherometer_frame_display_contact_cross_section() {
   }
 }
 
+// The part of the display case that butts against the display case.
 module display_top_block() {
   translate([-display_wide/2, -base_dia/2-display_transition, 0])
     cube([display_wide, display_transition, display_box_thick]);
 }
 
+// Transition between dial case and the actual box.
 module display_transition_block() {
   slice=0.25;        // size of block slice.
   // We hull together many slices from the rounded bottom part of the
@@ -557,13 +545,25 @@ module display_transition_block() {
   }
 }
 
-module display_case() {
+module display_base_block() {
   start_y = -base_dia/2;
+  // TODO: there is similar stuff going on in display-case
+  have_wall = true;  // Separating wall. A little more rigidity if true.
+  local_offset = have_wall ? 1 : -2*e;
+
   hull() {
     display_top_block();
     translate([-display_wide/2, start_y - display_high, 0]) champfer_point_cloud();
     translate([display_wide/2, start_y - display_high, 0]) scale([-1, 1, 1]) champfer_point_cloud();
+    intersection() {  // Make front align smoothly with round bottom plate
+      cylinder(r=leg_plate_radius, h=e);
+      translate([-display_wide/2, -100-base_dia/2, 0]) cube([display_wide, 100, 1]);
+    }
   }
+
+  // Little tactile extrusion to 'feel' the button.
+  tactile_bobble=3;
+  translate([display_wide/2-2, start_y-display_button_from_top-local_offset, 0.4*display_box_thick]) sphere(r=tactile_bobble, $fn=30);
 
   // Retaining blocks to be matched up with the holes for the M3 nuts of the
   // device.
@@ -573,16 +573,50 @@ module display_case() {
   }
 }
 
+// The electronics and display. Space it needs inside its casing.
+// Poking through top (view display and button) and bottom.
+module display_electronics_punch() {
+  extra=0.2;
+  w=35.7+2*extra;
+  h=33.4+2*extra;
+  knob_dia=1.5;
+  knob_long=0.5;
+  knob_bottom=3;
+  knob_from_top=display_button_from_top;
+  translate([-w/2, -h, -display_box_thick+e]) difference() {
+    union() {
+      cube([w, h, display_box_thick]);  // PCB size
+      translate([w, h-knob_from_top-10/2, 0]) cube([knob_long, 10, display_box_thick-0]);
+    }
+    translate([w-knob_long+e, h-knob_from_top-2/2, 0]) cube([knob_long+5, 2, display_box_thick-4]);
+  }
+
+  // Display
+  dw=32;
+  dh=17.5;
+  translate([0, -dh/2-6.5, 5-e]) color("blue") cube([dw, dh, 10], center=true);
+
+  // old switch
+  if (false) translate([w/2-e, -h+6, -10]) {
+    translate([0, -4.5, 0]) hull() {
+      cube([5, 8, 7]);
+      translate([0, 15, 0]) cube([e, e, 7]);
+    }
+    translate([5-e, 0, 3.5]) rotate([0, 90, 0]) cylinder(r=4/2, h=4);
+  }
+}
+
 module display_case_punch() {
-  have_wall = false;  // Separating wall. A little more rigidity if true.
+  have_wall = true;  // Separating wall. A little more rigidity if true.
   local_offset = have_wall ? 1 : -2*e;
-  translate([0, -base_dia/2 - local_offset, display_box_thick-display_top_wall]) electronics_punch();
+  translate([0, -base_dia/2 - local_offset, display_box_thick-display_top_wall]) display_electronics_punch();
 
   // Screws at the very front to hold down display.
   translate([0, -bottom_mount_front_display_offset, 0]) {
-    translate([bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, -135]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
-    translate([-bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, 135]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
+    translate([bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, -60]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
+    translate([-bottom_mount_front_display_distance/2, 0, 0]) rotate([0, 0, 90]) m3_screw(len=display_box_thick-4, nut_at=display_box_thick/5, nut_channel=10);
   }
+  translate([0, -bottom_mount_front_display_center_offset, 0]) rotate([0, 0, 150]) m3_screw(len=display_box_thick-3, nut_at=1, nut_channel=10);
 }
 
 module display_cable_channel_punch(at_x, wide) {
@@ -592,11 +626,11 @@ module display_cable_channel_punch(at_x, wide) {
   }
 }
 
-module display_part() {
+module display_case() {
   difference() {
     union() {
       display_transition_block();  // From round to square
-      display_case();              // Rest of the box.
+      display_base_block();        // Rest of the box.
     }
     display_case_punch();
     // Channels for the cable
@@ -604,6 +638,45 @@ module display_part() {
     display_cable_channel_punch(cable_channel_distance+w/2, w);
     display_cable_channel_punch(-cable_channel_distance-w/2, w);
   }
+}
+
+module display_case_button() {
+  // TODO: there is similar stuff going on in display-case
+  have_wall = true;  // Separating wall. A little more rigidity if true.
+  local_offset = have_wall ? 1 : -2*e;
+
+  intersection() {
+    display_case();
+    translate([display_wide/2+e,-base_dia/2 - local_offset -display_button_from_top, display_top_wall+e]) display_button_separator();
+  }
+}
+
+module display_part() {
+  // TODO: there is similar stuff going on in display-case
+  have_wall = true;  // Separating wall. A little more rigidity if true.
+  local_offset = have_wall ? 1 : -2*e;
+
+  difference() {
+    display_case();
+    translate([display_wide/2+e,-base_dia/2 - local_offset -display_button_from_top, display_top_wall+e]) display_button_separator(extra=0.3, actuation=0.8);
+  }
+}
+
+// Separating display box in two separately printable parts.
+module display_separator() {
+  translate([0, 0, 25+display_box_thick]) cube([100, base_dia+2*display_transition, 50], center=true);
+}
+
+// Printable: front part can be printed flat, upside down, which leaves a
+// nice surface.
+module display_front_part() {
+  difference() { display_part(); display_separator(); }
+}
+
+// The curved transition part can be printed separately, then glued on top
+// of the display_front_part.
+module display_transition_part() {
+  intersection() { display_part(); display_separator(); }
 }
 
 module leg_plate() {
@@ -656,11 +729,31 @@ module demo_leg_plate() {
   }
 }
 
+module display_button_separator(extra=0, actuation=0) {
+  knob_y=5 + 2*extra;
+  //deep = (display_wide - 36) / 2 + 1 + extra;
+  deep = 3 + actuation;
+  translate([-deep, -knob_y/2, -10]) {
+    hull() {
+      cube([deep+5, knob_y, display_box_thick+10]);  // button face to outside
+      translate([-3, knob_y/2, 0]) cylinder(r=0.5, h=display_box_thick+10);
+    }
+  }
+  // cone to hold it in place
+  translate([0, 0, 0]) hull() {
+    translate([-1, -knob_y/2, -2+extra]) cube([0.2, knob_y, display_box_thick]);
+    translate([-10, -(knob_y+5)/2, -2+extra]) cube([0.2, knob_y+5, display_box_thick]);
+  }
+}
+
 // Assemble to see how that looks.
 if (true) {
   demo_leg_plate();
   color("red") render() spherometer_frame_stem_squeeze_block();
   color("yellow") render() spherometer_frame_main_block();
-  color("blue") translate([0, 1*20, 0]) render() spherometer_frame_battery_lid();
-  color("gray") translate([0, -0*10, 0]) render() display_part();
+  color("blue") translate([0, 0*20, 0]) render() spherometer_frame_battery_lid();
+  translate([0, -0*10, 0]) {
+    color("gray") render() display_part();
+    color("yellow") render() display_case_button();
+  }
 }
