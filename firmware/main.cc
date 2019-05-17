@@ -201,7 +201,7 @@ void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
 
     // Print focal length in chosen units.
     constexpr int line2 = 16;
-    x = disp->Print(font_smalltext, 0, line2, "ƒ = ");
+    x = disp->Print(font_smalltext, 0, line2, "ƒ=");
     const int32_t display_f = roundf(m.imperial ? 10*f : f);
     x = disp->Print(font_smalltext, x, line2,
                     strfmt(display_f, m.imperial ? 1:0, 5));
