@@ -78,9 +78,10 @@ display_wall_thick=1.5;
 display_top_wall=0.8;    // Front face a little thinner to have display close.
 display_wide=52;         // Mostly determined by electronics size and screws.
 display_high=36;
-display_box_thick=7.5;    // Large enough to house electronics.
-display_transition=7;   // Transition blend between dial and display box.
-display_button_from_top=10.11;
+display_box_thick=7.5;   // Large enough to house electronics.
+display_transition=7;    // Transition blend between dial and display box.
+display_front_radius_adjust=-0.5;  // Don't go all the way to the edge of plate
+display_button_from_top=10.11;     // Position of the button
 
 // Mounting holes, holding down the back part, the front part and the
 // display part.
@@ -100,7 +101,7 @@ bottom_mount_center_offset=bottom_mount_front_offset + 0;
 bottom_mount_front_distance=front_width - 8;  // right/left distance.
 
 // Center screw in display-front.
-bottom_mount_front_display_center_offset=leg_plate_radius - 7;
+bottom_mount_front_display_center_offset=leg_plate_radius - 8;
 
 bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
 bottom_mount_back_distance=display_wide - 13;  // right/left distance.
@@ -551,7 +552,7 @@ module display_base_block() {
     translate([-display_wide/2, start_y - display_high, 0]) champfer_point_cloud();
     translate([display_wide/2, start_y - display_high, 0]) scale([-1, 1, 1]) champfer_point_cloud();
     intersection() {  // Make front align smoothly with round bottom plate
-      cylinder(r=leg_plate_radius, h=e);
+      cylinder(r=leg_plate_radius+display_front_radius_adjust, h=e);
       translate([-display_wide/2, -100-base_dia/2, 0]) cube([display_wide, 100, 1]);
     }
   }
