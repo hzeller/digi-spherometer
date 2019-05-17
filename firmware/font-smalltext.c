@@ -3,7 +3,7 @@
  * Font-File: smalltext.bdf
  *      Font: -Misc-Fixed-Medium-R-Normal--18-120-100-100-C-90-ISO10646-1
  *      Size: 18   Baseline at: 11
- * For chars: .0123456789-Please zero on flat surface mm>sag=≈"©Henner Zeller/ƒ
+ * For chars: .0123456789-Please zero on flat surface mm>sag=≈"©Henner Zeller/ƒ⌀
  */
 
 #include "font-smalltext.h"
@@ -151,6 +151,10 @@ static const uint8_t PROGMEM _font_data_smalltext[] = {
   /* codepoint U+2248 plain bytes */
   0x20,0x90,0x90,0x20,0x40,0x40,0x20,
   0x01,0x00,0x00,0x01,0x02,0x02,0x01,
+
+  /* codepoint U+2300 plain bytes */
+  0xc0,0x20,0x10,0x90,0x50,0x20,0xd0,
+  0x05,0x02,0x05,0x04,0x04,0x02,0x01,
 };
 
 static const struct GlyphData PROGMEM _font_glyphs_smalltext[] = {
@@ -191,10 +195,11 @@ static const struct GlyphData PROGMEM _font_glyphs_smalltext[] = {
   {.codepoint = 0x00a9, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 354},
   {.codepoint = 0x0192, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 370},
   {.codepoint = 0x2248, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 382},
+  {.codepoint = 0x2300, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 396},
 };
 
 const struct FontData PROGMEM font_smalltext = {
-  .available_glyphs = 37,
+  .available_glyphs = 38,
   .baseline = 11,
   .stripes = 2,
   .bits = _font_data_smalltext,

@@ -3,14 +3,14 @@
  * Font-File: smalltext.bdf
  *      Font: -Misc-Fixed-Medium-R-Normal--18-120-100-100-C-90-ISO10646-1
  *      Size: 18   Baseline at: 11
- * For chars: .0123456789-Please zero on flat surface mm>sag=≈"©Henner Zeller/ƒ
+ * For chars: .0123456789-Please zero on flat surface mm>sag=≈"©Henner Zeller/ƒ⌀
  */
 #ifndef FONT_smalltext_
 #define FONT_smalltext_
 
 #include "bdfont-support.h"
 
-/* font containing 37 characters */
+/* font containing 38 characters */
 extern const struct FontData PROGMEM font_smalltext;
 
 #endif /* FONT_smalltext_ */

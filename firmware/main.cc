@@ -69,10 +69,10 @@ struct {
   const char *text;
   const float mm;
 } aperture_items[kApertureChoices] = {
-  { "  6\"",  6*25.4 },
-  { "  8\"",  8*25.4 },
-  { " 10\"", 10*25.4 },
-  { " 12\"", 12*25.4 },
+  { "  ⌀6\"",  6*25.4 },
+  { "  ⌀8\"",  8*25.4 },
+  { " ⌀10\"", 10*25.4 },
+  { " ⌀12\"", 12*25.4 },
 };
 
 
@@ -174,6 +174,40 @@ void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
   const bool is_overflow = (radius > 9999);   // Limit digits to screen-size
   const int32_t display_radius = is_overflow ? 9999 : radius;
 
+  // -- Print focal length and ƒ/-Number
+  if (is_overflow) {
+    // Don't show any numbers in that case. Not every useful.
+    for (int y = 0; y < 32; y += 8)
+      disp->FillStripeRange(0, 127, y, 0x00);
+    disp->Print(font_bignumber, 46, 0, "⚠");
+  }
+  else {
+    const float f = m.radius / 2;  // Focal length of a sphere.
+    // -- ƒ/-Number according to user choice from button.
+    // f/5.43 ≈ ⌀ 6"
+    const float f_mm = m.imperial ? 25.4 * f : f;
+    const float dia = aperture_items[dia_choice].mm;
+    const int32_t f_N = roundf(100 * f_mm / dia);  // 100* for extra digits
+    x = disp->Print(font_smalltext, 0, 0, "ƒ/");
+    x = disp->Print(font_smalltext, x, 0, strfmt(f_N, 2, 5));
+    x = disp->Print(font_smalltext, x, 0, " ≈");
+    // Ideally, we'd like to show this inverse to better draw the attention
+    // to this number and the arrow-button right next to it.
+    // However, it seems to suck brigthness out of that line which makes
+    // it visually non-pleasing. TODO: Experiment with it once final
+    // case with button is there.
+    x = disp->Print(font_smalltext, x, 0, aperture_items[dia_choice].text,
+                    false);
+
+    // Print focal length in chosen units.
+    constexpr int line2 = 16;
+    x = disp->Print(font_smalltext, 0, line2, "ƒ = ");
+    const int32_t display_f = roundf(m.imperial ? 10*f : f);
+    x = disp->Print(font_smalltext, x, line2,
+                    strfmt(display_f, m.imperial ? 1:0, 5));
+    x = disp->Print(font_smalltext, x, line2, m.imperial ? "\"  " : "mm");
+  }
+
   // -- Printing the radius in a large font.
 
   // Make sure that it is clear we're talking about the sphere radius
@@ -196,35 +230,6 @@ void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
     // No decimal point, total of 4 characters: 9999
     x = disp->Print(font_bignumber, 15, 32, strfmt(display_radius, 0, 4));
     disp->Print(font_smalltext, x, 48, "mm");
-  }
-
-    // -- Print focal length and ƒ/-Number
-
-  if (is_overflow) {
-    // Don't show any numbers in that case. Not every useful.
-    for (int y = 0; y < 32; y += 8)
-      disp->FillStripeRange(0, 127, y, 0x00);
-    disp->Print(font_bignumber, 46, 0, "⚠");
-  }
-  else {
-    const float f = m.radius / 2;  // Focal length of a sphere.
-    // -- ƒ/-Number according to user choice from button.
-    // f/5.43 ≈ ⌀ 6"
-    const float f_mm = m.imperial ? 25.4 * f : f;
-    const float dia = aperture_items[dia_choice].mm;
-    const int32_t f_N = roundf(100 * f_mm / dia);  // 100* for extra digits
-    x = disp->Print(font_smalltext, 0, 0, "ƒ/");
-    x = disp->Print(font_smalltext, x, 0, strfmt(f_N, 2, 5));
-    x = disp->Print(font_smalltext, x, 0, " ≈ ");
-    x = disp->Print(font_smalltext, x, 0, aperture_items[dia_choice].text);
-
-    // Print focal length in chosen units.
-    constexpr int line2 = 16;
-    x = disp->Print(font_smalltext, 0, line2, "ƒ = ");
-    const int32_t display_f = roundf(m.imperial ? 10*f : f);
-    x = disp->Print(font_smalltext, x, line2,
-                    strfmt(display_f, m.imperial ? 1:0, 5));
-    x = disp->Print(font_smalltext, x, line2, m.imperial ? "\"  " : "mm");
   }
 }
 
@@ -263,7 +268,6 @@ int main() {
 
     if (off_cycles == kStartShowingOutro) {
       disp.ClearScreen();
-      // Make sure anything after "off" forces ClearScreen:
       last_aperture_choice = 0xff;
       disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
       disp.Print(font_tinytext, 0, 16, "github hzeller/");
@@ -283,10 +287,10 @@ int main() {
     if (button.clicked()) {
       aperture_choice += 1;
       if (aperture_choice >= kApertureChoices) aperture_choice = 0;
-      disp.ClearScreen();
     }
 
-    if (last_dial.negative != dial.negative
+    if (last_aperture_choice == 0xff
+        || last_dial.negative != dial.negative
         || last_dial.is_imperial != dial.is_imperial
         || is_flat(last_dial.abs_value) != is_flat(dial.abs_value)) {
       disp.ClearScreen();  // Visuals will change. Clean-slatify.

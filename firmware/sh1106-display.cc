@@ -133,13 +133,14 @@ void SH1106Display::ClearScreen() {
 
 uint8_t SH1106Display::Print(const FontData &font,
                              uint8_t xpos, const uint8_t ypos,
-                             const char *utf8_text) {
+                             const char *utf8_text,
+                             bool inverse) {
   const uint8_t y_page = ypos/8;
   while (*utf8_text) {
     const uint16_t cp = utf8_next_codepoint(utf8_text);
     xpos += BDFONT_EMIT_GLYPH(&font, cp, true,
                               { StartPageTransmission(xpos, y_page + stripe); },
-                              { I2CMaster::Write(b); },
+                              { I2CMaster::Write(inverse ? ~b : b); },
                               { I2CMaster::FinishTransmission(); });
   }
   return xpos;
