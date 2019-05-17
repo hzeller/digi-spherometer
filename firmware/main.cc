@@ -55,6 +55,27 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #  include "dial-indicator-autoutlet.h"
 #endif
 
+/*
+ * Choices of mirror diameters to be cylced through. In every context, there
+ * are typically only a few common mirror sizes to deal with, so a single
+ * button allows to cycle through them.
+ * This can be shown in any unit as long as the actual value is stored in
+ * millimeter for the calculation.
+ *
+ * All texts should have the same width.
+ */
+constexpr int kApertureChoices = 4;
+struct {
+  const char *text;
+  const float mm;
+} aperture_items[kApertureChoices] = {
+  { "  6\"",  6*25.4 },
+  { "  8\"",  8*25.4 },
+  { " 10\"", 10*25.4 },
+  { " 12\"", 12*25.4 },
+};
+
+
 // ------------------------------ configurable parameters ------------
 // Distance center to feet. Radius of the Spherometer-feet circle.
 constexpr float d_mm = 50.0f;
@@ -142,74 +163,68 @@ struct MeasureData {
   float radius;
 };
 
-void ShowRadiusPage(SH1106Display *disp, const MeasureData &m) {
-  // Print sag value we got from the dial indicator
-  uint8_t x = disp->Print(font_smalltext, 0, 0, "sag=");
-  x = disp->Print(font_smalltext, x, 0,
-                  strfmt(m.raw_sag,
-                         m.imperial ? raw_fmt_inch_digits : raw_fmt_mm_digits,
-                         7));
-  disp->Print(font_smalltext, x, 0, m.imperial ? "\"  " : "mm");
-
-  // Make sure that it is clear we're talking about the sphere radius
-  disp->Print(font_smalltext, 0, 40, "r=");
-
+void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
+                    uint8_t dia_choice) {
+  uint8_t x;
   // Calculating the sag values to radius in their respective units.
   // We round the returned value to an integer, which is the type
   // we can properly string format below.
   // For imperial: fixpoint shift to display 1/10" unit
-  int32_t radius = roundf(m.imperial ? 10 * m.radius : m.radius);
+  const int32_t radius = roundf(m.imperial ? 10 * m.radius : m.radius);
+  const bool is_overflow = (radius > 9999);   // Limit digits to screen-size
+  const int32_t display_radius = is_overflow ? 9999 : radius;
+
+  // -- Printing the radius in a large font.
+
+  // Make sure that it is clear we're talking about the sphere radius
+  disp->Print(font_smalltext, 0, 48, "r=");
 
   // If the value is too large, we don't want to overflow the display.
   // Instead, we clamp it to highest value and show a little > indicator.
-  if (radius > 9999) {   // Limit digits to screen-size
-    disp->Print(font_smalltext, 0, 24, ">");
-    radius = 9999;
+  if (is_overflow) {
+    disp->Print(font_smalltext, 0, 32, ">");  // 'overflow' indicator
   } else {
-    disp->Print(font_smalltext, 0, 24, " ");
+    disp->Print(font_smalltext, 0, 32, " ");
   }
 
   // Different formatting of numbers in different units, including suffix
   if (m.imperial) {
     // One decimal point, total of 5 characters (including point) 999.9
-    x = disp->Print(font_bignumber, 15, 24, strfmt(radius, 1, 5));
-    disp->Print(font_bignumber, x, 16, "\"");
+    x = disp->Print(font_bignumber, 15, 32, strfmt(display_radius, 1, 5));
+    disp->Print(font_bignumber, x, 32, "\"");
   } else {
     // No decimal point, total of 4 characters: 9999
-    x = disp->Print(font_bignumber, 15, 24, strfmt(radius, 0, 4));
-    disp->Print(font_smalltext, x, 40, "mm");
-  }
-}
-
-void ShowFocusPage(SH1106Display *disp, const MeasureData &m, int page) {
-  uint8_t x;
-  const float f = m.radius / 2;  // Focal length of a sphere.
-  x = disp->Print(font_smalltext, 0, 0, "ƒ = ");
-  const int32_t display_f = roundf(m.imperial ? 10*f : f);
-  x = disp->Print(font_smalltext, x, 0, strfmt(display_f, m.imperial ? 1 : 0));
-  x = disp->Print(font_smalltext, x, 0, m.imperial ? "\"  " : "mm");
-  disp->FillStripeRange(x, 127, 0, 0x00);
-  disp->FillStripeRange(x, 127, 8, 0x00);
-
-  // With this ƒ, show the ƒ/N for a couple of common mirror diameters
-  constexpr uint8_t per_page = 3;
-  // First in mm, second in inches.
-  float sample_diameters[2][6] = {{ 150, 200, 250,    300, 400, 600 },
-                                 {    6,   8,  10,     12,  16,  20 }};
-  for (uint8_t i = 0; i < per_page; ++i) {
-    const float dia = sample_diameters[m.imperial][i + per_page*page];
-    const int32_t f_N = roundf(10 * f / dia);  // 10* for extra digit
-    const uint8_t y = 16 + i*16;
-    x = disp->Print(font_smalltext, 0, y, strfmt(dia, 0, 2));
-    x = disp->Print(font_smalltext, x, y, m.imperial ? "\" ≈ ƒ/" : "mm ≈ ƒ/");
-    x = disp->Print(font_smalltext, x, y, strfmt(f_N, 1));
-    disp->FillStripeRange(x, 127, y, 0x00);
-    disp->FillStripeRange(x, 127, y + 8, 0x00);
+    x = disp->Print(font_bignumber, 15, 32, strfmt(display_radius, 0, 4));
+    disp->Print(font_smalltext, x, 48, "mm");
   }
 
-  // Show 'scrollbar'. We have two pages, so show a bright bar going down.
-  for (uint8_t i = 0; i < 4; ++i) {
-    disp->FillStripeRange(127, 128, (i+4*page)*8, 0xff);
+    // -- Print focal length and ƒ/-Number
+
+  if (is_overflow) {
+    // Don't show any numbers in that case. Not every useful.
+    for (int y = 0; y < 32; y += 8)
+      disp->FillStripeRange(0, 127, y, 0x00);
+    disp->Print(font_bignumber, 46, 0, "⚠");
+  }
+  else {
+    const float f = m.radius / 2;  // Focal length of a sphere.
+    // -- ƒ/-Number according to user choice from button.
+    // f/5.43 ≈ ⌀ 6"
+    const float f_mm = m.imperial ? 25.4 * f : f;
+    const float dia = aperture_items[dia_choice].mm;
+    const int32_t f_N = roundf(100 * f_mm / dia);  // 100* for extra digits
+    x = disp->Print(font_smalltext, 0, 0, "ƒ/");
+    x = disp->Print(font_smalltext, x, 0, strfmt(f_N, 2, 5));
+    x = disp->Print(font_smalltext, x, 0, " ≈ ");
+    x = disp->Print(font_smalltext, x, 0, aperture_items[dia_choice].text);
+
+    // Print focal length in chosen units.
+    constexpr int line2 = 16;
+    x = disp->Print(font_smalltext, 0, line2, "ƒ = ");
+    const int32_t display_f = roundf(m.imperial ? 10*f : f);
+    x = disp->Print(font_smalltext, x, line2,
+                    strfmt(display_f, m.imperial ? 1:0, 5));
+    x = disp->Print(font_smalltext, x, line2, m.imperial ? "\"  " : "mm");
   }
 }
 
@@ -226,10 +241,10 @@ int main() {
   Button button;
 
   DialData last_dial = {};
-  uint8_t last_page = 0xff;  // outside range, so guaranteed not seen before.
+  uint8_t last_aperture_choice = 0xff;  // outside range, so guaranteed new
 
   uint8_t off_cycles = 0;
-  uint8_t display_page = 0;
+  uint8_t aperture_choice = 0;
 
   constexpr uint8_t kPowerOffAfterCycles = 50;
   constexpr uint8_t kStartShowingOutro = 4;
@@ -248,7 +263,8 @@ int main() {
 
     if (off_cycles == kStartShowingOutro) {
       disp.ClearScreen();
-      last_page = 0xff;   // Make sure anything after "off" forces ClearScreen.
+      // Make sure anything after "off" forces ClearScreen:
+      last_aperture_choice = 0xff;
       disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
       disp.Print(font_tinytext, 0, 16, "github hzeller/");
       disp.Print(font_tinytext, 0, 32, "digi-spherometer");
@@ -259,20 +275,18 @@ int main() {
       SleepTillDialIndicatorClocksAgain();
       // ... We're here after wakeup
       disp.Reset();      // Might've slept a long time. Make sure OK.
-      display_page = 0;  // Go back to radius page after waking up.
     }
 
     if (off_cycles)
       continue;
 
     if (button.clicked()) {
-      display_page += 1;
-      if (display_page == 3) display_page = 0;
+      aperture_choice += 1;
+      if (aperture_choice >= kApertureChoices) aperture_choice = 0;
       disp.ClearScreen();
     }
 
-    if (last_page != display_page
-        || last_dial.negative != dial.negative
+    if (last_dial.negative != dial.negative
         || last_dial.is_imperial != dial.is_imperial
         || is_flat(last_dial.abs_value) != is_flat(dial.abs_value)) {
       disp.ClearScreen();  // Visuals will change. Clean-slatify.
@@ -283,12 +297,13 @@ int main() {
       disp.Print(font_bignumber, 34, 16, "OK");
     }
     else if (!dial.negative) {
-      disp.Print(font_smalltext, 0, 8, "Please zero on");
-      disp.Print(font_smalltext, 8, 32, "flat surface");
+      disp.Print(font_bignumber, 46, 0, "⚠");
+      disp.Print(font_smalltext, 0, 32, "Please zero on");
+      disp.Print(font_smalltext, 8, 48, "flat surface");
     }
     else if (dial.abs_value == last_dial.abs_value
              && dial.is_imperial == last_dial.is_imperial
-             && last_page == display_page) {
+             && last_aperture_choice == aperture_choice) {
       // Value or unit did not change. No need to update display.
     }
     else {
@@ -299,14 +314,10 @@ int main() {
       prepared_data.imperial = dial.is_imperial;
       const float sag = dial.is_imperial ? value / raw2inch : value / raw2mm;
       prepared_data.radius = calc_r(dial.is_imperial, sag);
-
-      if (display_page == 0)
-        ShowRadiusPage(&disp, prepared_data);
-      else
-        ShowFocusPage(&disp, prepared_data, display_page - 1);
+      ShowRadiusPage(&disp, prepared_data, aperture_choice);
     }
 
     last_dial = dial;
-    last_page = display_page;
+    last_aperture_choice = aperture_choice;
   }
 }

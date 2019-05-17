@@ -22,8 +22,8 @@
 // The delay _should_ be more, but looks like we can drive the SSD1306
 // a lot faster. Which is good (even a delay of 0 seems to work fine, but
 // let's not push it too far :)).
-static constexpr uint8_t DELAY_2TWI = 1;  // > 4.5μs
-static constexpr uint8_t DELAY_4TWI = 1;  // > 4μs
+static constexpr uint8_t DELAY_2TWI = 0;  // > 4.5μs
+static constexpr uint8_t DELAY_4TWI = 0;  // > 4μs
 
 void I2CMaster::Init() {
   USI_PORT |= (1<<USI_PORT_SDA) | (1<<USI_PORT_SCL);  // pullups on.
