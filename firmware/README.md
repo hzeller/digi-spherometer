@@ -10,10 +10,10 @@ See the [electronic](../pcb) section about the wiring.
 Switching the drop-meter between metric and inch automatically switches the
 screen to the corresponding units, including the calculated values.
 
-The main screen shows the current drop-meter radius in a large,
-easy-to-read font. A Button press allows to switch to a second screen that
-shows the calculated focal length of the (spherical) mirror and ƒ/N-values
-calucated for various mirror sizes.
+The main screen shows the current mirror-radius in a large,
+easy-to-read font. A Button press allows to switch between different
+(pre-selected) mirror-sizes to conveniently display the ƒ/N-value for the
+selected aperture.
 
 The device does not need an additional power button: it auto-detects
 when the drop-indicator is switched off (because it stops sending updates), and
