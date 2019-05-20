@@ -30,8 +30,7 @@ Firmware                           | Hardware
 --------------------------------------|-------------------------------
 [![Firmware](./img/oled.jpg)](./firmware) | [![Hardware](./img/spherometer-display-schematic.png)](./pcb)
 
-#### First prototype with rough mounting frame outline
-![](img/spherometer-prototype.jpg)
+![](img/spherometer.jpg)
 [![](img/dial-case.png)](./frame)
 
 [attiny85]: https://www.microchip.com/wwwproducts/en/ATtiny85
