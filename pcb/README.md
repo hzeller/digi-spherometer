@@ -48,5 +48,5 @@ This board is soldered to the back of a 1.3" OLED display
 
 ![](../img/spherometer-display-pcb.png)
 
-### as prototype
-![](../img/prototype-board.jpg)
+### View through acrylic bottom
+![](../img/spherometer-bottom.jpg)
