@@ -21,9 +21,9 @@
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/sleep.h>
+#include <math.h>
 #include <stdint.h>
 #include <util/delay.h>
-#include <math.h>
 
 #include "sh1106-display.h"
 #include "strfmt.h"
@@ -33,7 +33,64 @@
 #include "font-smalltext.h"
 #include "font-tinytext.h"
 
-// The data to be filled by the indicator-reading function.
+// ------------------------------ configurable parameters ------------
+/*
+ * Choices of mirror diameters to be cylced through. In every workshop, there
+ * are typically only a few common mirror sizes to deal with, so a single
+ * button allows to cycle through them.
+ * There is a display text which can show any text or unit, while the actual
+ * value is stored in millimeter for the calculation.
+ *
+ * All texts should have the same width.
+ */
+static constexpr int kApertureChoices = 5;
+static constexpr struct {
+  const char *text;
+  const float mm;
+} aperture_items[kApertureChoices] = {
+  { "  ⌀6\"",  6*25.4 },
+  { "  ⌀8\"",  8*25.4 },
+  { " ⌀10\"", 10*25.4 },
+  { " ⌀12\"", 12*25.4 },
+  { " ⌀16\"", 16*25.4 },
+};
+
+// Distance center to feet. Radius of the Spherometer-feet circle.
+static constexpr float d_mm = 50.0f;
+
+// Pins the dial indicator is connected to.
+static constexpr uint8_t CLK_BIT  = (1<<3);
+static constexpr uint8_t DATA_BIT = (1<<4);
+
+static constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
+
+#ifndef INDICATOR_DECIMALS
+#  define INDICATOR_DECIMALS 3
+#endif
+
+#if INDICATOR_DECIMALS == 3
+static constexpr float raw2mm = 1000.0f;
+static constexpr uint8_t raw_fmt_mm_digits = 3;
+static constexpr float raw2inch = 100000.0f;
+static constexpr uint8_t raw_fmt_inch_digits = 5;
+#elif INDICATOR_DECIMALS == 2
+static constexpr float raw2mm = 100.0f;
+static constexpr uint8_t raw_fmt_mm_digits = 2;
+static constexpr float raw2inch = 10000.0f;
+static constexpr uint8_t raw_fmt_inch_digits = 4;
+#else
+#  error "Unhandled INDICATOR_DECIMALS value."
+#endif
+
+// TODO: also take radius of balls used as feet into account.
+
+// ------------------------------ nothing to be changed below --------
+// ... derived from the above; let's compile-time calculate them.
+static constexpr float d_inch = d_mm / 25.4f;
+static constexpr float d_mm_squared = d_mm * d_mm;
+static constexpr float d_inch_squared = d_inch * d_inch;
+
+// The type of data to be filled by the indicator-reading function.
 struct DialData {
   int32_t abs_value;  // Absolute value in 1/1000mm or 1/10000"
   bool negative;      // true if the value is negative.
@@ -54,64 +111,6 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #else
 #  include "dial-indicator-autoutlet.h"
 #endif
-
-/*
- * Choices of mirror diameters to be cylced through. In every context, there
- * are typically only a few common mirror sizes to deal with, so a single
- * button allows to cycle through them.
- * This can be shown in any unit as long as the actual value is stored in
- * millimeter for the calculation.
- *
- * All texts should have the same width.
- */
-constexpr int kApertureChoices = 4;
-struct {
-  const char *text;
-  const float mm;
-} aperture_items[kApertureChoices] = {
-  { "  ⌀6\"",  6*25.4 },
-  { "  ⌀8\"",  8*25.4 },
-  { " ⌀10\"", 10*25.4 },
-  { " ⌀12\"", 12*25.4 },
-};
-
-
-// ------------------------------ configurable parameters ------------
-// Distance center to feet. Radius of the Spherometer-feet circle.
-constexpr float d_mm = 50.0f;
-
-// Pins the dial indicator is connected to.
-constexpr uint8_t CLK_BIT  = (1<<3);
-constexpr uint8_t DATA_BIT = (1<<4);
-
-constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
-
-#ifndef INDICATOR_DECIMALS
-#  define INDICATOR_DECIMALS 3
-#endif
-
-#if INDICATOR_DECIMALS == 3
-constexpr float raw2mm = 1000.0f;
-constexpr uint8_t raw_fmt_mm_digits = 3;
-constexpr float raw2inch = 100000.0f;
-constexpr uint8_t raw_fmt_inch_digits = 5;
-#elif INDICATOR_DECIMALS == 2
-constexpr float raw2mm = 100.0f;
-constexpr uint8_t raw_fmt_mm_digits = 2;
-constexpr float raw2inch = 10000.0f;
-constexpr uint8_t raw_fmt_inch_digits = 4;
-#else
-#  error "Unhandled INDICATOR_DECIMALS value."
-#endif
-
-// TODO: also take radius of balls used as feet into account.
-// TODO: factors and decimals for 2 and 3 digit indicators
-
-// ------------------------------ nothing to be changed below --------
-// ... derived from the above; let's compile-time calculate them.
-constexpr float d_inch = d_mm / 25.4f;
-constexpr float d_mm_squared = d_mm * d_mm;
-constexpr float d_inch_squared = d_inch * d_inch;
 
 static float calc_r(bool is_imperial, float sag) {
   return is_imperial
@@ -156,24 +155,20 @@ private:
   bool previous_pressed_ = false;
 };
 
-// Precalculated measure data, to be used in radius and focal page.
-struct MeasureData {
-  uint32_t raw_sag;
-  uint8_t imperial;
-  float radius;
-};
-
-void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
-                    uint8_t dia_choice) {
-  uint8_t x;
+void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice) {
+  const float sag = dial.is_imperial
+    ? dial.abs_value / raw2inch
+    : dial.abs_value / raw2mm;
+  const float radius = calc_r(dial.is_imperial, sag);
   // Calculating the sag values to radius in their respective units.
   // We round the returned value to an integer, which is the type
   // we can properly string format below.
   // For imperial: fixpoint shift to display 1/10" unit
-  const int32_t radius = roundf(m.imperial ? 10 * m.radius : m.radius);
-  const bool is_overflow = (radius > 9999);   // Limit digits to screen-size
-  const int32_t display_radius = is_overflow ? 9999 : radius;
+  const int32_t radius_digits = roundf(dial.is_imperial ? 10 * radius : radius);
+  const bool is_overflow = (radius_digits > 9999);   // Limit digits on screen
+  const int32_t display_radius = is_overflow ? 9999 : radius_digits;
 
+  uint8_t x;
   // -- Print focal length and ƒ/-Number
   if (is_overflow) {
     // Don't show any numbers in that case. Not every useful.
@@ -182,12 +177,12 @@ void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
     disp->Print(font_bignumber, 46, 0, "⚠");
   }
   else {
-    const float f = m.radius / 2;  // Focal length of a sphere.
+    const float f = radius / 2;  // Focal length of a sphere.
     // -- ƒ/-Number according to user choice from button.
     // f/5.43 ≈ ⌀ 6"
-    const float f_mm = m.imperial ? 25.4 * f : f;
+    const float f_mm = dial.is_imperial ? 25.4 * f : f;
     const float dia = aperture_items[dia_choice].mm;
-    const int32_t f_N = roundf(100 * f_mm / dia);  // 100* for extra digits
+    const int32_t f_N = roundf(100 * f_mm / dia);  // 100* for 2 decimal digits
     x = disp->Print(font_smalltext, 0, 0, "ƒ/");
     x = disp->Print(font_smalltext, x, 0, strfmt(f_N, 2, 5));
     x = disp->Print(font_smalltext, x, 0, " ≈");
@@ -202,10 +197,10 @@ void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
     // Print focal length in chosen units.
     constexpr int line2 = 16;
     x = disp->Print(font_smalltext, 0, line2, "ƒ=");
-    const int32_t display_f = roundf(m.imperial ? 10*f : f);
+    const int32_t display_f = roundf(dial.is_imperial ? 10*f : f);
     x = disp->Print(font_smalltext, x, line2,
-                    strfmt(display_f, m.imperial ? 1:0, 5));
-    x = disp->Print(font_smalltext, x, line2, m.imperial ? "\"  " : "mm");
+                    strfmt(display_f, dial.is_imperial ? 1:0, 5));
+    x = disp->Print(font_smalltext, x, line2, dial.is_imperial ? "\"  " : "mm");
   }
 
   // -- Printing the radius in a large font.
@@ -222,7 +217,7 @@ void ShowRadiusPage(SH1106Display *disp, const MeasureData &m,
   }
 
   // Different formatting of numbers in different units, including suffix
-  if (m.imperial) {
+  if (dial.is_imperial) {
     // One decimal point, total of 5 characters (including point) 999.9
     x = disp->Print(font_bignumber, 15, 32, strfmt(display_radius, 1, 5));
     disp->Print(font_bignumber, x, 32, "\"");
@@ -246,14 +241,14 @@ int main() {
   Button button;
 
   DialData last_dial = {};
-  uint8_t last_aperture_choice = 0xff;  // outside range, so guaranteed new
+  uint8_t last_aperture_choice = 0xff;  // outside range, so guaranteed refresh
 
   uint8_t off_cycles = 0;
   uint8_t aperture_choice = 0;
 
   constexpr uint8_t kPowerOffAfterCycles = 50;
   constexpr uint8_t kStartShowingOutro = 4;
-  DialData dial = {};
+  DialData dial;
   for (;;) {
     const bool indicator_on = ReadDialIndicator(CLK_BIT, DATA_BIT, &dial);
 
@@ -268,7 +263,7 @@ int main() {
 
     if (off_cycles == kStartShowingOutro) {
       disp.ClearScreen();
-      last_aperture_choice = 0xff;
+      last_aperture_choice = 0xff;  // Force refresh of screen after we get out
       disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
       disp.Print(font_tinytext, 0, 16, "github hzeller/");
       disp.Print(font_tinytext, 0, 32, "digi-spherometer");
@@ -276,9 +271,9 @@ int main() {
     }
     else if (off_cycles > kPowerOffAfterCycles) {
       disp.SetOn(false);
-      SleepTillDialIndicatorClocksAgain();
+      SleepTillDialIndicatorClocksAgain();  // ZZzzz...
       // ... We're here after wakeup
-      disp.Reset();      // Might've slept a long time. Make sure OK.
+      disp.Reset();      // Might've slept a long time. Make sure display ok.
     }
 
     if (off_cycles)
@@ -311,14 +306,7 @@ int main() {
       // Value or unit did not change. No need to update display.
     }
     else {
-      // micrometer units or 0.00001" units. Imperial increments in steps of 5
-      MeasureData prepared_data;
-      const int32_t value = dial.abs_value;
-      prepared_data.raw_sag = value;
-      prepared_data.imperial = dial.is_imperial;
-      const float sag = dial.is_imperial ? value / raw2inch : value / raw2mm;
-      prepared_data.radius = calc_r(dial.is_imperial, sag);
-      ShowRadiusPage(&disp, prepared_data, aperture_choice);
+      ShowRadiusPage(&disp, dial, aperture_choice);
     }
 
     last_dial = dial;

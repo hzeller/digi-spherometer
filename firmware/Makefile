@@ -21,7 +21,7 @@ DEFINES+=$(USER_DEFINES)
 
 TARGET_ARCH=-mmcu=attiny85
 CC=avr-gcc
-CFLAGS=-Os -g -Wall -Wextra -ffunction-sections -fdata-sections -mcall-prologues $(DEFINES) -I.
+CFLAGS=-Os -g -W -Wall -Wextra -ffunction-sections -fdata-sections -mcall-prologues $(DEFINES) -I.
 CXX=avr-g++
 CXXFLAGS=$(CFLAGS) -std=c++11
 AVRDUDE_DEVICE ?= /dev/ttyUSB0
@@ -45,10 +45,10 @@ main.hex: main.elf
 
 main.cc : font-bignumber.c font-smalltext.c font-tinytext.c
 
-# this requires http://github.com/hzeller/bdfont.data to be installed
-# For distribution, we don't depend on %.chars, so that a git cloned
-# project does not need bdfont-data-gen installed.
-font-%.c:
+# This requires http://github.com/hzeller/bdfont.data to be installed
+# For distribution, we don't depend on %.chars, so that a git cloned project
+# does not need bdfont-data-gen installed and compiles with provided files.
+font-%.c: # %.chars
 	bdfont-data-gen -s fonts/$*.bdf $* -C $*.chars
 
 flash: main.hex
