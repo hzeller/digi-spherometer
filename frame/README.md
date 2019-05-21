@@ -23,5 +23,7 @@ spherometer_frame_main_block.stl
 spherometer_frame_stem_squeeze_block.stl
 ```
 
+All 3D printed parts are emitted as STL, the shape of the base-plate as DXF.
+
 ![](../img/base-plate.png)
 ![](../img/dial-case.png)

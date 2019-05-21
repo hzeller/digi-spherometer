@@ -14,14 +14,13 @@ There are two slot connectors on the board, on one side to connect the indicator
 placement is in accordance with the 3D-printed cases.
 The connectors are slots to allow for a convenient, low-profile soldering of
 wires to it (wires vanish completely inside the slots).
-At the top there is some space for easier wire-management (I use it to fix the
-wires in place with hot-glue).
+At the top there is some space for easier wire-management (see picture below).
 
 Some indicators (such as the autoutlet) can be powered from an external 1.5V
 source; if the battery-pack is tapped in the middle, this is passed through.
-Don't forget to remove the coin-cell from the indicator beforehand!
-(Not tested yet. Might be a good idea to maybe even filter that to not inject
-noise into unit).
+Do not use at this point, leave the 1.5V slots disconnected: turns out that the
+long battery wire and the connection to the μC injects too much noise. Might
+need some filtering.
 
 The board is designed with cut-outs to stay clear of components on the
 particular display module I was using to place the board with no gap on the

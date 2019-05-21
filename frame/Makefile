@@ -16,7 +16,7 @@ all: $(TARGETS)
                  -D'print_quality=true' -o $@ $^
 
 %.dxf: %.scad
-	openscad -o $@ $^
+	openscad -D'print_quality=true' -o $@ $^
 
 fab/%.scad : frame.scad
 	mkdir -p fab

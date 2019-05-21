@@ -10,10 +10,10 @@ See the [electronic](../pcb) section about the wiring.
 Switching the drop-meter between metric and inch automatically switches the
 screen to the corresponding units, including the calculated values.
 
-The main screen shows the current mirror-radius in a large,
-easy-to-read font. A Button press allows to switch between different
-(pre-selected) mirror-sizes to conveniently display the ƒ/N-value for the
-selected aperture.
+The screen shows the current mirror-radius in a large font.
+In addition, the focal length of the mirror (which is 1/2 the radius)
+and the ƒ/N-value for a selected aperture.
+A Button press allows to choose between different common mirror-diameters.
 
 The device does not need an additional power button: it auto-detects
 when the drop-indicator is switched off (because it stops sending updates), and
@@ -28,26 +28,17 @@ The fonts are compiled-in and directly copied from `PROGMEM`-memory.
 
 The I²C and OLED display code is freshly implemented with only the relevant
 features. The display-code only uses features from the SH1106 controller, so it
-is compatible with SH1106 and SSD1306. You still need a compile-time option
-to distinguish the displays as there is a different pixel-offset.
+is compatible with SH1106 and SSD1306 (you still need a compile-time option
+to distinguish the displays as there is a different pixel-offset).
 
-The fonts were [generated as C-Arrays][bdfont.data] from some BDF
+The fonts were [generated as C-Arrays][bdfont.data] from bitmap BDF
 fonts so that they can be compiled into the binary.
 Fonts can be 'sparse' and only contain characters really needed in the
 application; this is necessary as flash-memory in the ATTiny is pretty limited
-with 8KiB.
-
-Given that the font is sparse anyway, thus we're not forced to include all
-characters, this implementation allows for any character in the 16 bit [Plane 0]
-range of Unicode characters.
-With that, the UI can easily include special non-ASCII characters, such
-as `ƒ`, `μ` or `±`. The `Print()` function accepts
-text-literals as UTF-8 strings, which makes them very natural to use while
-keeping the code compact.
-
-Anyway, the tool to generate the font-data and support functions to emit these
-became its [own little project][bdfont.data] - check
-it out if you regularly have to get bitmapped fonts into small devices.
+with 8KiB. The [bdfont.data] project provides [Plane 0] UTF8 support, which makes
+it easy to include special characters such as `ƒ`, `μ` or` ⚠`;
+it is a separate project, check it out if you need font-support in your small
+devices.
 
 ### Code choices
 Even though binary space is limited, `float`-numbers are used for the
