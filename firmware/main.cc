@@ -48,11 +48,11 @@ static constexpr struct {
   const char *text;
   const float mm;
 } aperture_items[kApertureChoices] = {
-  { "  ⌀6\"",  6*25.4 },
-  { "  ⌀8\"",  8*25.4 },
-  { " ⌀10\"", 10*25.4 },
-  { " ⌀12\"", 12*25.4 },
-  { " ⌀16\"", 16*25.4 },
+  { "   ⌀6\"",  6*25.4 },
+  { "   ⌀8\"",  8*25.4 },
+  { "  ⌀10\"", 10*25.4 },
+  { "  ⌀12\"", 12*25.4 },
+  { "  ⌀16\"", 16*25.4 },
 };
 
 // Distance center to feet. Radius of the Spherometer-feet circle.
@@ -184,8 +184,9 @@ void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice) {
     const float dia = aperture_items[dia_choice].mm;
     const int32_t f_N = roundf(100 * f_mm / dia);  // 100* for 2 decimal digits
     x = disp->Print(font_smalltext, 0, 0, "ƒ/");
-    x = disp->Print(font_smalltext, x, 0, strfmt(f_N, 2, 5));
-    x = disp->Print(font_smalltext, x, 0, " ≈");
+    x = disp->Print(font_smalltext, x, 0, strfmt(f_N, 2));
+    x = disp->Print(font_smalltext, x, 0, "  ");
+    x = disp->Print(font_smalltext, 64, 0, "≈");
     // Ideally, we'd like to show this inverse to better draw the attention
     // to this number and the arrow-button right next to it.
     // However, it seems to suck brigthness out of that line which makes
