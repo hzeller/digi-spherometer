@@ -15,6 +15,8 @@ In addition, the focal length of the mirror (which is 1/2 the radius)
 and the ƒ/N-value for a selected aperture.
 A Button press allows to choose between different common mirror-diameters.
 
+![](../img/oled.jpg)
+
 The device does not need an additional power button: it auto-detects
 when the drop-indicator is switched off (because it stops sending updates), and
 then goes to deep sleep; waking up when the indicator is switched on again.
