@@ -23,7 +23,7 @@ plate.
 
 Case | Electronics | Firmware
 -----|-------------|----------
-[![Case](./img/dial-case.png)](./frame) | [![Electronics](./img/spherometer-display-schematic.png)](./pcb) | [![Firmware](./img/oled.jpg)](./firmware)
+[![Case](./img/dial-case.png)](./frame/README.md) | [![Electronics](./img/spherometer-display-schematic.png)](./pcb/README.md) | [![Firmware](./img/oled.jpg)](./firmware/README.md)
 
 ![](img/spherometer.jpg)
 
@@ -33,4 +33,4 @@ Case | Electronics | Firmware
 [Mitutoyo 543]: https://ecatalog.mitutoyo.com/ABSOLUTE-Digimatic-Indicator-ID-S-Series-543-with-Simple-Design-C1196.aspx
 [autoutlet-indicator]: https://www.amazon.com/gp/product/B07C63VFN3
 [avr-gcc]: https://gcc.gnu.org/wiki/avr-gcc
-[firmware]: ./firmware
+[firmware]: ./firmware/README.md

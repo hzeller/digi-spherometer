@@ -13,7 +13,8 @@ screen to the corresponding units, including the calculated values.
 The screen shows the current mirror-radius in a large font.
 In addition, the focal length of the mirror (which is 1/2 the radius)
 and the ƒ/N-value for a selected aperture.
-A Button press allows to choose between different common mirror-diameters.
+A Button press allows to choose between different common mirror-diameters
+(compile-time choice).
 
 ![](../img/oled.jpg)
 
