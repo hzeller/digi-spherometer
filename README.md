@@ -21,9 +21,9 @@ The [case](./frame) to hold the dial indicator, microcontroller+display and
 batteries is 3D-printed, the base can be laser-cut or machined from some metal
 plate.
 
-Case | Electronics | Firmware
------|-------------|----------
-[![Case](./img/dial-case.png)](./frame/README.md) | [![Electronics](./img/spherometer-display-schematic.png)](./pcb/README.md) | [![Firmware](./img/oled.jpg)](./firmware/README.md)
+Case | Electronics | Firmware | Calibration
+-----|-------------|----------|-------------
+[![Case](./img/dial-case.png)](./frame/README.md) | [![Electronics](./img/schematic-thumbnail.png)](./pcb/README.md) | [![Firmware](./img/oled.jpg)](./firmware/README.md) | [![Calibration](./img/calibration-scan.jpg)](./calibration/README.md)
 
 ![](img/spherometer.jpg)
 

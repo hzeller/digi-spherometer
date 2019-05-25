@@ -24,6 +24,8 @@ Put your final spherometer on the bed and create a high-resolution scan
 (>= 600dpi). Be aware that the resulting images are _very_ large, so make sure
 to select only the relevant part in the preview.
 
+![](../img/calibration-scan.jpg)
+
 It might be a little hard later to find the exact center where the ball hits
 the surface. Maybe experimenting putting the balls in a little puddle of ink
 might be a good idea.
