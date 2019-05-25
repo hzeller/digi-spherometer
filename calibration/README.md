@@ -3,8 +3,8 @@ Calibration
 
 Any mechanical system build to dimensions will be slightly off from the desired
 dimensions.  These inaccuracies might be small (if a CNC machine was used) or
-larger if hand-manufacturing was done. If we measure the final outcome, we can
-correct for that.
+larger if built by hand. If we measure the final outcome, we can correct for
+that as we can feed back the measured dimensions into the firmware.
 
 The dimension that is critical for correct measurements it the distance
 of the dial indicator tip to the edge of the circle spanned by the three
@@ -14,9 +14,11 @@ that doesn't help if the indicator tip is off-center. Here, we take all these
 into account.
 
 For our measurement, we'll use an optical tool: a flatbed scanner. It has
-a pretty accurate fixed pixel-to-realworld resolution which allows us to
-determine accurate absolute measurements. Given the high resolution, the
-accuracy can be in the order of 1/100mm.
+a pretty accurate fixed pixel-to-realworld size translation which allows us to
+determine accurate absolute measurements. This can give us in the order of
+1/100mm accurate measurements.
+
+(this might be updated to also include examples how to measure with calipers)
 
 # Scanning
 
@@ -74,7 +76,11 @@ Indicator to true center....:  0.379mm
 Effective Spherometer radius: 49.906mm
 ```
 
-Done. Now we can build the firmware with the exact value for more exact
+Done. Maybe you want to re-do the measurements a couple of times with different
+rotations on the scanner to even out slight aspect-ratio and reading issues.
+Take an average of that effective spherometer radius measurement.
+
+Now we can build the firmware with the calculated value for more accurate
 readings:
 
 ```
