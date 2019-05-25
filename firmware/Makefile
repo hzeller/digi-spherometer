@@ -16,6 +16,10 @@ DEFINES=-DF_CPU=8000000UL
 # If indicator is a Mitutoyo, add this
 #DEFINES+=-DINDICATOR_MITUTOYO
 
+# Radius of the spherometer ring in mm. In this project, this is by
+# default 50mm, however after calibration you might want to tweak this value.
+#DEFINES+=-DSPHEROMETER_RADIUS_MM=50.000
+
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
 

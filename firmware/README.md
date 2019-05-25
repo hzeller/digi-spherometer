@@ -61,10 +61,12 @@ make fuse
 
 Then, compiling and pushing new code to the ATTiny is as simple as invoking
 `make flash`. There are some defines that you can pass directly on the
-command-line, see [Makefile](./Makefile).
+command-line, see [Makefile](./Makefile). In particular after
+[calibration](../calibration), you might want to define the exact measured
+spherometer radius.
 
 ```bash
-make USER_DEFINES="-DDISPLAY_I2C=0x78 -DINDICATOR_DECIMALS=3" flash
+make USER_DEFINES="-DDISPLAY_I2C=0x78 -DINDICATOR_DECIMALS=3 -DSPHEROMETER_RADIUS_MM=50.0" flash
 ```
 
 The default compile works with the Autoutlet dial indicator. If you use a

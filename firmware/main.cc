@@ -56,7 +56,10 @@ static constexpr struct {
 };
 
 // Distance center to feet. Radius of the Spherometer-feet circle.
-static constexpr float d_mm = 50.0f;
+#ifndef SPHEROMETER_RADIUS_MM
+#  define SPHEROMETER_RADIUS_MM 50
+#endif
+static constexpr float d_mm = SPHEROMETER_RADIUS_MM;
 
 // Pins the dial indicator is connected to.
 static constexpr uint8_t CLK_BIT  = (1<<3);
