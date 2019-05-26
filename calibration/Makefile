@@ -1,1 +1,1 @@
-spcalc:
+spscan:

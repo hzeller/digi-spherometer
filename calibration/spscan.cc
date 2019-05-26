@@ -23,7 +23,7 @@
  Then if we run the binary, we get the relevant information back. Here, the
  coordinates were read from a 2400dpi scan:
 
- ./spcalc 2400 < ~/positions.txt
+ ./spscan 2400 < ~/positions.txt
  Circle radius...............: 50.289mm
  Indicator to true center....:  0.573mm
  Effective Spherometer radius: 49.716mm
