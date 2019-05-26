@@ -558,8 +558,9 @@ module display_base_block() {
   }
 
   // Little tactile extrusion to 'feel' the button.
-  tactile_bobble=3;
-  translate([display_wide/2-2, start_y-display_button_from_top-local_offset, 0.4*display_box_thick]) sphere(r=tactile_bobble, $fn=30);
+  tactile_bobble_r=2.8;
+  tactile_bobble_expose=1.5;
+  translate([display_wide/2-tactile_bobble_r+tactile_bobble_expose, start_y-display_button_from_top-local_offset, 0.4*display_box_thick]) sphere(r=tactile_bobble_r, $fn=30);
 
   // Retaining blocks to be matched up with the holes for the M3 nuts of the
   // device.
@@ -575,16 +576,16 @@ module display_electronics_punch() {
   extra=0.2;
   w=35.7+2*extra;
   h=33.4+2*extra;
-  knob_dia=1.5;
   knob_long=0.5;
-  knob_bottom=3;
+  knob_poke_wide=2.5;
+  knob_poke_high=3;
   knob_from_top=display_button_from_top;
   translate([-w/2, -h, -display_box_thick+e]) difference() {
     union() {
       cube([w, h, display_box_thick]);  // PCB size
       translate([w, h-knob_from_top-10/2, 0]) cube([knob_long, 10, display_box_thick-0]);
     }
-    translate([w-knob_long+e, h-knob_from_top-2/2, 0]) cube([knob_long+5, 2, display_box_thick-4]);
+    translate([w-knob_long+e, h-knob_from_top-knob_poke_wide/2, 0]) cube([knob_long+5, knob_poke_wide, knob_poke_high]);
   }
 
   // Display
