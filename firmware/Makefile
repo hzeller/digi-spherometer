@@ -20,6 +20,12 @@ DEFINES=-DF_CPU=8000000UL
 # default 50mm, however after calibration you might want to tweak this value.
 #DEFINES+=-DSPHEROMETER_RADIUS_MM=50.000
 
+# In case you always want to reference from a flat surface, you can disable
+# the tool reference feature to avoid accidentally enabling it. In particular
+# if you have a indicator that can keep an absolute position such as the
+# Mitutoyo, you might not want this
+#DEFINES+=-DDISABLE_TOOL_REFERENCE_FEATURE
+
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
 

@@ -3,14 +3,14 @@
  * Font-File: bignumber.bdf
  *      Font: -FreeType-TeX Gyre Adventor-Medium-R-Normal--41-410-72-72-P-226-ISO10646-1
  *      Size: 70   Baseline at: 31
- * For chars: .0123456789 "OK⚠
+ * For chars: .0123456789 "ZERO⚠
  */
 #ifndef FONT_bignumber_
 #define FONT_bignumber_
 
 #include "bdfont-support.h"
 
-/* font containing 16 characters */
+/* font containing 18 characters */
 extern const struct FontData PROGMEM font_bignumber;
 
 #endif /* FONT_bignumber_ */

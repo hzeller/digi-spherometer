@@ -158,10 +158,12 @@ private:
   bool previous_pressed_ = false;
 };
 
-void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice) {
-  const float sag = dial.is_imperial
+void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
+                    bool tool_referenced) {
+  float sag = dial.is_imperial
     ? dial.abs_value / raw2inch
     : dial.abs_value / raw2mm;
+  if (tool_referenced) sag /= 2;
   const float radius = calc_r(dial.is_imperial, sag);
   // Calculating the sag values to radius in their respective units.
   // We round the returned value to an integer, which is the type
@@ -205,6 +207,11 @@ void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice) {
     x = disp->Print(font_smalltext, x, line2,
                     strfmt(display_f, dial.is_imperial ? 1:0, 5));
     x = disp->Print(font_smalltext, x, line2, dial.is_imperial ? "\"  " : "mm");
+
+#ifndef DISABLE_TOOL_REFERENCE_FEATURE
+    x = disp->Print(font_smalltext, x + 10, line2, "ref");
+    disp->Print(font_smalltext, x, line2, tool_referenced ? "⯊" : "▂");
+#endif
   }
 
   // -- Printing the radius in a large font.
@@ -249,6 +256,7 @@ int main() {
 
   uint8_t off_cycles = 0;
   uint8_t aperture_choice = 0;
+  bool tool_referenced = false;
 
   constexpr uint8_t kPowerOffAfterCycles = 50;
   constexpr uint8_t kStartShowingOutro = 4;
@@ -278,15 +286,11 @@ int main() {
       SleepTillDialIndicatorClocksAgain();  // ZZzzz...
       // ... We're here after wakeup
       disp.Reset();      // Might've slept a long time. Make sure display ok.
+      tool_referenced = false;
     }
 
     if (off_cycles)
       continue;
-
-    if (button.clicked()) {
-      aperture_choice += 1;
-      if (aperture_choice >= kApertureChoices) aperture_choice = 0;
-    }
 
     if (last_aperture_choice == 0xff
         || last_dial.negative != dial.negative
@@ -296,21 +300,30 @@ int main() {
     }
 
     if (is_flat(dial.abs_value)) {
+#ifdef DISABLE_TOOL_REFERENCE_FEATURE
       disp.Print(font_smalltext, 48, 0, "flat");
-      disp.Print(font_bignumber, 34, 16, "OK");
+#else
+      if (button.clicked()) tool_referenced = !tool_referenced;
+      disp.Print(font_smalltext, 60, 0,  " ▂ flat", !tool_referenced);
+      disp.Print(font_smalltext, 60, 16, " ⯊ tool", tool_referenced);
+#endif
+      disp.Print(font_bignumber, 12, 32, "ZERO");
     }
     else if (!dial.negative) {
       disp.Print(font_bignumber, 46, 0, "⚠");
       disp.Print(font_smalltext, 0, 32, "Please zero on");
       disp.Print(font_smalltext, 8, 48, "flat surface");
     }
-    else if (dial.abs_value == last_dial.abs_value
-             && dial.is_imperial == last_dial.is_imperial
-             && last_aperture_choice == aperture_choice) {
-      // Value or unit did not change. No need to update display.
-    }
     else {
-      ShowRadiusPage(&disp, dial, aperture_choice);
+      if (button.clicked()) {
+        aperture_choice += 1;
+        if (aperture_choice >= kApertureChoices) aperture_choice = 0;
+      }
+      if (dial.abs_value != last_dial.abs_value
+          || dial.is_imperial != last_dial.is_imperial
+          || last_aperture_choice != aperture_choice) {
+        ShowRadiusPage(&disp, dial, aperture_choice, tool_referenced);
+      }
     }
 
     last_dial = dial;
