@@ -11,7 +11,7 @@ of the dial indicator tip to the edge of the circle spanned by the three
 balls on the base-plate. Note: in many articles about spherometer
 calibration, you only see calculations of the radius of circle spanned
 by the legs. But given that the indicator stem might be off-center, the really
-interesting value is the closest distance from that stem to the leg-circle.
+interesting value is the _closest_ distance from that stem to the leg-circle.
 
 Once we have measured that radius, we can update the firmware using the radius
 we measure.

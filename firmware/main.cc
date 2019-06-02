@@ -61,6 +61,12 @@ static constexpr struct {
 #endif
 static constexpr float d_mm = SPHEROMETER_RADIUS_MM;
 
+#ifndef SPHEROMETER_FEET_BALL_DIAMETER_MM
+#  define SPHEROMETER_FEET_BALL_DIAMETER_MM 12.7
+#endif
+// Radius of the bearing balls we're standing on.
+static constexpr float ball_r_mm = SPHEROMETER_FEET_BALL_DIAMETER_MM / 2;
+
 // Pins the dial indicator is connected to.
 static constexpr uint8_t CLK_BIT  = (1<<3);
 static constexpr uint8_t DATA_BIT = (1<<4);
@@ -90,6 +96,7 @@ static constexpr uint8_t raw_fmt_inch_digits = 4;
 // ------------------------------ nothing to be changed below --------
 // ... derived from the above; let's compile-time calculate them.
 static constexpr float d_inch = d_mm / 25.4f;
+static constexpr float ball_r_inch = ball_r_mm / 25.4f;
 static constexpr float d_mm_squared = d_mm * d_mm;
 static constexpr float d_inch_squared = d_inch * d_inch;
 
@@ -115,10 +122,11 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #  include "dial-indicator-autoutlet.h"
 #endif
 
-static float calc_r(bool is_imperial, float sag) {
+static float calc_r(bool is_imperial, float sag, bool tool_referenced) {
+  if (tool_referenced) sag /= 2;
   return is_imperial
-    ? ((d_inch_squared + sag*sag) / (2*sag))
-    : ((d_mm_squared + sag*sag) / (2*sag));
+    ? ((d_inch_squared + sag*sag) / (2*sag) + ball_r_inch)
+    : ((d_mm_squared + sag*sag) / (2*sag) + ball_r_mm);
 }
 
 // Get microcontroller to deep sleep. We enable a level changing interrupt
@@ -160,11 +168,10 @@ private:
 
 void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
                     bool tool_referenced) {
-  float sag = dial.is_imperial
+  const float sag = dial.is_imperial
     ? dial.abs_value / raw2inch
     : dial.abs_value / raw2mm;
-  if (tool_referenced) sag /= 2;
-  const float radius = calc_r(dial.is_imperial, sag);
+  const float radius = calc_r(dial.is_imperial, sag, tool_referenced);
   // Calculating the sag values to radius in their respective units.
   // We round the returned value to an integer, which is the type
   // we can properly string format below.
