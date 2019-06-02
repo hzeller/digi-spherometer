@@ -124,6 +124,9 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 
 static float calc_r(bool is_imperial, float sag, bool tool_referenced) {
   if (tool_referenced) sag /= 2;
+  // TODO: figure out if this formula needs to be adapted for tool reference;
+  // Given that we are measuring a concave and convex surface, the ball
+  // correction probably needs to be adpated.
   return is_imperial
     ? ((d_inch_squared + sag*sag) / (2*sag) + ball_r_inch)
     : ((d_mm_squared + sag*sag) / (2*sag) + ball_r_mm);
@@ -319,7 +322,11 @@ int main() {
     else if (!dial.negative) {
       disp.Print(font_bignumber, 46, 0, "⚠");
       disp.Print(font_smalltext, 0, 32, "Please zero on");
+#ifdef DISABLE_TOOL_REFERENCE_FEATURE
       disp.Print(font_smalltext, 8, 48, "flat surface");
+#else
+      disp.Print(font_smalltext, 8, 48, "ref. surface");
+#endif
     }
     else {
       if (button.clicked()) {
