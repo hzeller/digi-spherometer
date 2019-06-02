@@ -157,11 +157,12 @@ static const uint8_t PROGMEM _font_data_smalltext[] = {
   0x05,0x02,0x05,0x04,0x04,0x02,0x01,
 
   /* codepoint U+2582 RLE/nibble */
-  0x09,0x06,
+  0x11,0x60,0x50,  0x31,0x48,0x44,  0x11,0x24,0x14,  0x01,0x0c,
+  0x09,0x18,
 
-  /* codepoint U+2bca RLE/nibble */
-  0x33,0x00,0x80,  0x03,0x00,
-  0x71,0x06,0x07,  0x01,0x06,
+  /* codepoint U+2bca RLE/4 */
+  0xdd,0x00,0x02,0x7e,0x02,  0x01,0x00,
+  0xb9,0x18,0x1c,0x1e,0x1c,  0x01,0x18,
 };
 
 static const struct GlyphData PROGMEM _font_glyphs_smalltext[] = {
@@ -203,8 +204,8 @@ static const struct GlyphData PROGMEM _font_glyphs_smalltext[] = {
   {.codepoint = 0x0192, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 370},
   {.codepoint = 0x2248, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 382},
   {.codepoint = 0x2300, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 396},
-  {.codepoint = 0x2582, .width= 9, .stripe_begin=1, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(1)  , .data_offset= 410},
-  {.codepoint = 0x2bca, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(1)  , .data_offset= 412},
+  {.codepoint = 0x2582, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(1)  , .data_offset= 410},
+  {.codepoint = 0x2bca, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(2)  , .data_offset= 423},
 };
 
 const struct FontData PROGMEM font_smalltext = {
