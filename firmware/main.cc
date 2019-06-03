@@ -60,7 +60,7 @@ static constexpr struct {
 #ifndef SPHEROMETER_RADIUS_MM
 #  define SPHEROMETER_RADIUS_MM 50
 #endif
-#ifndef SPHEROMETER_RADIUS_ERROR
+#ifndef SPHEROMETER_RADIUS_ERROR_MM
 #  define SPHEROMETER_RADIUS_ERROR_MM 0.1
 #endif
 static constexpr ErrorFloat d_mm(SPHEROMETER_RADIUS_MM,
