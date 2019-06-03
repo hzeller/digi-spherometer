@@ -20,6 +20,9 @@ DEFINES=-DF_CPU=8000000UL
 # default 50mm, however after calibration you might want to tweak this value.
 #DEFINES+=-DSPHEROMETER_RADIUS_MM=50.000
 
+# Accuracy of the radius above. This is used for error propagation.
+#DEFINES+=-DSPHEROMETER_RADIUS_ERROR_MM=0.1
+
 # The diameter of the bearing balls we use as feet.
 #DEFINES+=-DSPHEROMETER_FEET_BALL_DIAMETER_MM=12.7
 

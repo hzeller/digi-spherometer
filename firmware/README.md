@@ -16,7 +16,13 @@ and the ƒ/N-value for a selected aperture.
 A Button press allows to choose between different common mirror-diameters
 (compile-time choice).
 
+The focal length is shown with error-margins, which are determined by the
+error introduced by the limited accuracy of the dial indicator as well as
+mechanical unknowns of the spherometer radius.
+
 ![](../img/oled.jpg)
+
+(TODO: explain experimental tool reference feature)
 
 The device does not need an additional power button: it auto-detects
 when the drop-indicator is switched off (because it stops sending updates), and
@@ -46,8 +52,10 @@ devices.
 ### Code choices
 Even though binary space is limited, `float`-numbers are used for the
 calculations; it simplifies code in comparsion to fixed-point integer
-calculations as there are large differences in orders of magnitude. Given that
-we have enough space, the readability of the code was more important.
+calculations (in particular as there are large differences in orders of
+magnitude).
+Given that we have enough code space, the readability of the code was more
+important.
 
 ### Install
 To build, install the `avr-gcc` toolchain and `avrdude`. There is no

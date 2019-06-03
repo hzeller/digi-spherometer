@@ -71,10 +71,19 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 
   // Convert
   data->negative = (nibbles[4] == 0b1000);
-  data->abs_value = nibbles[5];
+  int32_t abs_value = nibbles[5];
   for (int i = 6; i <= 10; ++i)  // BCD conversion.
-    data->abs_value = data->abs_value * 10 + nibbles[i];
+    abs_value = abs_value * 10 + nibbles[i];
+  data->raw_count = abs_value;
   data->is_imperial = (nibbles[12] == 0b0001);
+
+  // According to datasheet of 543-791B, we have an error of 0.001" or 3μm.
+  if (data->is_imperial) {
+    data->value = { abs_value * 0.0001, 0.0001 };
+  } else {
+    data->value = { abs_value * 0.001, 0.003 };
+  }
+  data->value.force_positive();
   return true;
 }
 

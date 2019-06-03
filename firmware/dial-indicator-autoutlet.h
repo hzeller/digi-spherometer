@@ -19,6 +19,10 @@
 
 // This is for this one https://www.amazon.com/gp/product/B07C63VFN3
 
+#ifndef INDICATOR_DECIMALS
+#  define INDICATOR_DECIMALS 3
+#endif
+
 // Read the dial indicator (my model: AUTOUTLET digital indicator with 1μm res).
 //
 // Returns 'false' if no data arrives from the indicator.
@@ -80,10 +84,33 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 
   // Fill data from read value.
   data->is_imperial = result.data.is_imperial;
-  data->abs_value = result.data.is_imperial
-    ? result.data.abs_value * 5
-    : result.data.abs_value;
+
+  // We need to convert it to the expected micrometer resolution; the
+  // interpretation of the raw count depends on number of digits the devices
+  // support.
+  //
+  // There is absolutely no documentation about the accuracy of these meters,
+  // which is very suspicious of course.
+  // Let's be very generous here and let's assume they are only slightly worse
+  // than the Mitutoyos.
+#if INDICATOR_DECIMALS == 3
+  if (result.data.is_imperial) {
+    data->value = { result.data.abs_value * 0.00005, 0.0002 };
+  } else {
+    data->value = { result.data.abs_value * 0.001, 0.005 };
+  }
+#elif INDICATOR_DECIMALS == 2
+  if (result.data.is_imperial) {
+    data->value = { result.data.abs_value * 0.0005, 0.002 };
+  } else {
+    data->value = { result.data.abs_value * 0.01, 0.05 };
+  }
+#else
+#  error "Unhandled INDICATOR_DECIMALS value. Supporting 2 and 3."
+#endif
+  data->value.force_positive();
   data->negative = result.data.negative;
+  data->raw_count = result.data.abs_value;
 
   return true;
 }

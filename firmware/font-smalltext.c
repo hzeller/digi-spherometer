@@ -3,7 +3,7 @@
  * Font-File: smalltext.bdf
  *      Font: -Misc-Fixed-Medium-R-Normal--18-120-100-100-C-90-ISO10646-1
  *      Size: 18   Baseline at: 11
- * For chars: .0123456789-Please zero on flat surface mm>sag=≈"©Henner Zeller/ƒ⌀▂⯊
+ * For chars: .0123456789-Please zero on flat surface mm>sag=≈"©Henner Zeller/ƒ±⌀▂⯊
  */
 
 #include "font-smalltext.h"
@@ -144,6 +144,10 @@ static const uint8_t PROGMEM _font_data_smalltext[] = {
   0xf8,0x04,0x72,0x8a,0x8a,0x52,0x04,0xf8,
   0x00,0x01,0x02,0x02,0x02,0x02,0x01,0x00,
 
+  /* codepoint U+00b1 RLE/nibble */
+  0x13,0x10,0xfe,  0x03,0x10,
+  0x07,0x02,
+
   /* codepoint U+0192 RLE/4 */
   0x99,0x00,0x40,0xfc,0x42,  0x01,0x04,
   0xd9,0x08,0x10,0x0f,0x00,
@@ -201,15 +205,16 @@ static const struct GlyphData PROGMEM _font_glyphs_smalltext[] = {
   {.codepoint = 'u',    .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 329},
   {.codepoint = 'z',    .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 340},
   {.codepoint = 0x00a9, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 354},
-  {.codepoint = 0x0192, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 370},
-  {.codepoint = 0x2248, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 382},
-  {.codepoint = 0x2300, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 396},
-  {.codepoint = 0x2582, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(1)  , .data_offset= 410},
-  {.codepoint = 0x2bca, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(2)  , .data_offset= 423},
+  {.codepoint = 0x00b1, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(1)  , .data_offset= 370},
+  {.codepoint = 0x0192, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_RLE(2)  , .data_offset= 377},
+  {.codepoint = 0x2248, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 389},
+  {.codepoint = 0x2300, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=1, .right_margin=1, BDFONT_PLAIN(0), .data_offset= 403},
+  {.codepoint = 0x2582, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(1)  , .data_offset= 417},
+  {.codepoint = 0x2bca, .width= 9, .stripe_begin=0, .stripe_end=2, .left_margin=0, .right_margin=0, BDFONT_RLE(2)  , .data_offset= 430},
 };
 
 const struct FontData PROGMEM font_smalltext = {
-  .available_glyphs = 40,
+  .available_glyphs = 41,
   .baseline = 11,
   .stripes = 2,
   .bits = _font_data_smalltext,

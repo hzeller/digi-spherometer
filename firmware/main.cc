@@ -27,6 +27,7 @@
 
 #include "sh1106-display.h"
 #include "strfmt.h"
+#include "error-float.h"
 
 // Compiled-in fonts we're using for the UI.
 #include "font-bignumber.h"
@@ -59,7 +60,11 @@ static constexpr struct {
 #ifndef SPHEROMETER_RADIUS_MM
 #  define SPHEROMETER_RADIUS_MM 50
 #endif
-static constexpr float d_mm = SPHEROMETER_RADIUS_MM;
+#ifndef SPHEROMETER_RADIUS_ERROR
+#  define SPHEROMETER_RADIUS_ERROR_MM 0.1
+#endif
+static constexpr ErrorFloat d_mm(SPHEROMETER_RADIUS_MM,
+                                 SPHEROMETER_RADIUS_ERROR_MM);
 
 #ifndef SPHEROMETER_FEET_BALL_DIAMETER_MM
 #  define SPHEROMETER_FEET_BALL_DIAMETER_MM 12.7
@@ -73,38 +78,23 @@ static constexpr uint8_t DATA_BIT = (1<<4);
 
 static constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
 
-#ifndef INDICATOR_DECIMALS
-#  define INDICATOR_DECIMALS 3
-#endif
-
-#if INDICATOR_DECIMALS == 3
-static constexpr float raw2mm = 1000.0f;
-static constexpr uint8_t raw_fmt_mm_digits = 3;
-static constexpr float raw2inch = 100000.0f;
-static constexpr uint8_t raw_fmt_inch_digits = 5;
-#elif INDICATOR_DECIMALS == 2
-static constexpr float raw2mm = 100.0f;
-static constexpr uint8_t raw_fmt_mm_digits = 2;
-static constexpr float raw2inch = 10000.0f;
-static constexpr uint8_t raw_fmt_inch_digits = 4;
-#else
-#  error "Unhandled INDICATOR_DECIMALS value."
-#endif
-
-// TODO: also take radius of balls used as feet into account.
-
 // ------------------------------ nothing to be changed below --------
 // ... derived from the above; let's compile-time calculate them.
-static constexpr float d_inch = d_mm / 25.4f;
-static constexpr float ball_r_inch = ball_r_mm / 25.4f;
-static constexpr float d_mm_squared = d_mm * d_mm;
-static constexpr float d_inch_squared = d_inch * d_inch;
+static constexpr ErrorFloat d_inch = d_mm / 25.4f;
+static constexpr ErrorFloat ball_r_inch = ball_r_mm / 25.4f;
+static constexpr ErrorFloat d_mm_squared = d_mm * d_mm;
+static constexpr ErrorFloat d_inch_squared = d_inch * d_inch;
 
-// The type of data to be filled by the indicator-reading function.
+// Data coming back from the dial indicator. The dial indicator knows
+// its internal format and returns values as Millimeter or Inch.
+// This is filled by the dial-indicator-specific implementation of
+// ReadDialIndicator()
 struct DialData {
-  int32_t abs_value;  // Absolute value in 1/1000mm or 1/10000"
+  DialData() : value(0), negative(false), is_imperial(false), raw_count(0) {}
+  ErrorFloat value;   // Absolute value in mm or inches.
   bool negative;      // true if the value is negative.
   bool is_imperial;   // Reading is in imperial units
+  int32_t raw_count;  // the internal raw value.
 };
 
 // The dial indicator header needs to provide this function.
@@ -122,12 +112,13 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #  include "dial-indicator-autoutlet.h"
 #endif
 
-static float calc_r(bool is_imperial, float sag, bool tool_referenced) {
-  if (tool_referenced) sag /= 2;
+static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
+  ErrorFloat sag = dial.value;
+  if (tool_referenced) sag = sag / 2;
   // TODO: figure out if this formula needs to be adapted for tool reference;
   // Given that we are measuring a concave and convex surface, the ball
   // correction probably needs to be adpated.
-  return is_imperial
+  return dial.is_imperial
     ? ((d_inch_squared + sag*sag) / (2*sag) + ball_r_inch)
     : ((d_mm_squared + sag*sag) / (2*sag) + ball_r_mm);
 }
@@ -171,10 +162,8 @@ private:
 
 void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
                     bool tool_referenced) {
-  const float sag = dial.is_imperial
-    ? dial.abs_value / raw2inch
-    : dial.abs_value / raw2mm;
-  const float radius = calc_r(dial.is_imperial, sag, tool_referenced);
+  const ErrorFloat error_radius = calc_r(dial, tool_referenced);
+  const float radius = error_radius.nominal;
   // Calculating the sag values to radius in their respective units.
   // We round the returned value to an integer, which is the type
   // we can properly string format below.
@@ -193,6 +182,7 @@ void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
   }
   else {
     const float f = radius / 2;  // Focal length of a sphere.
+    const float f_err = (error_radius.high - radius)/2;
     // -- ƒ/-Number according to user choice from button.
     // f/5.43 ≈ ⌀ 6"
     const float f_mm = dial.is_imperial ? 25.4 * f : f;
@@ -204,7 +194,7 @@ void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
     x = disp->Print(font_smalltext, 64, 0, "≈");
     // Ideally, we'd like to show this inverse to better draw the attention
     // to this number and the arrow-button right next to it.
-    // However, it seems to suck brigthness out of that line which makes
+    // However, it seems to suck brightness out of that line which makes
     // it visually non-pleasing. TODO: Experiment with it once final
     // case with button is there.
     x = disp->Print(font_smalltext, x, 0, aperture_items[dia_choice].text,
@@ -216,25 +206,34 @@ void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
     const int32_t display_f = roundf(dial.is_imperial ? 10*f : f);
     x = disp->Print(font_smalltext, x, line2,
                     strfmt(display_f, dial.is_imperial ? 1:0, 5));
+    const int32_t display_error_f = roundf(dial.is_imperial ? 10*f_err : f_err);
+    x = disp->Print(font_smalltext, x, line2, "±"); // show error as plusminus
+    x = disp->Print(font_smalltext, x, line2,
+                    strfmt(display_error_f, dial.is_imperial ? 1:0, 0));
     x = disp->Print(font_smalltext, x, line2, dial.is_imperial ? "\"  " : "mm");
-
-#ifndef DISABLE_TOOL_REFERENCE_FEATURE
-    x = disp->Print(font_smalltext, x + 10, line2, "ref");
-    disp->Print(font_smalltext, x, line2, tool_referenced ? "⯊" : "▂");
-#endif
+    // since we're hugging the ±-value right after the value we show, we need
+    // to make sure to clean everything after the value we've written to not
+    // leave leftover 'mm' or '"' suffix behind when numbers get shorter.
+    // Our text is two stripes high, so let's fill these.
+    disp->FillStripeRange(x, 127, line2, 0x00);
+    disp->FillStripeRange(x, 127, line2+8, 0x00);
   }
 
   // -- Printing the radius in a large font.
 
   // Make sure that it is clear we're talking about the sphere radius
-  disp->Print(font_smalltext, 0, 48, "r=");
+  disp->Print(font_smalltext, 0, 32, "r=");
 
   // If the value is too large, we don't want to overflow the display.
   // Instead, we clamp it to highest value and show a little > indicator.
   if (is_overflow) {
-    disp->Print(font_smalltext, 0, 32, ">");  // 'overflow' indicator
+    disp->Print(font_smalltext, 0, 48, ">");  // 'overflow' indicator
   } else {
-    disp->Print(font_smalltext, 0, 32, " ");
+#ifndef DISABLE_TOOL_REFERENCE_FEATURE
+    disp->Print(font_smalltext, 0, 48, tool_referenced ? "⯊" : "▂");
+#else
+    disp->Print(font_smalltext, 0, 48, " ");
+#endif
   }
 
   // Different formatting of numbers in different units, including suffix
@@ -261,7 +260,7 @@ int main() {
   SH1106Display disp;
   Button button;
 
-  DialData last_dial = {};
+  DialData last_dial;
   uint8_t last_aperture_choice = 0xff;  // outside range, so guaranteed refresh
 
   uint8_t off_cycles = 0;
@@ -305,11 +304,11 @@ int main() {
     if (last_aperture_choice == 0xff
         || last_dial.negative != dial.negative
         || last_dial.is_imperial != dial.is_imperial
-        || is_flat(last_dial.abs_value) != is_flat(dial.abs_value)) {
+        || is_flat(last_dial.raw_count) != is_flat(dial.raw_count)) {
       disp.ClearScreen();  // Visuals will change. Clean-slatify.
     }
 
-    if (is_flat(dial.abs_value)) {
+    if (is_flat(dial.raw_count)) {
 #ifdef DISABLE_TOOL_REFERENCE_FEATURE
       disp.Print(font_smalltext, 48, 0, "flat");
 #else
@@ -333,7 +332,7 @@ int main() {
         aperture_choice += 1;
         if (aperture_choice >= kApertureChoices) aperture_choice = 0;
       }
-      if (dial.abs_value != last_dial.abs_value
+      if (dial.raw_count != last_dial.raw_count
           || dial.is_imperial != last_dial.is_imperial
           || last_aperture_choice != aperture_choice) {
         ShowRadiusPage(&disp, dial, aperture_choice, tool_referenced);
