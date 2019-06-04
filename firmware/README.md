@@ -6,57 +6,6 @@ IO-pins, the [SSD1306 screen]/[SH1106 screen] is controlled via I²C.
 
 See the [electronic](../pcb) section about the wiring.
 
-### Features
-Switching the drop-meter between metric and inch automatically switches the
-screen to the corresponding units, including the calculated values.
-
-The screen shows the current mirror-radius in a large font.
-In addition, the focal length of the mirror (which is 1/2 the radius)
-and the ƒ/N-value for a selected aperture.
-A Button press allows to choose between different common mirror-diameters
-(compile-time choice).
-
-The focal length is shown with error-margins, which are determined by the
-error introduced by the limited accuracy of the dial indicator as well as
-mechanical unknowns of the spherometer radius.
-
-![](../img/oled.jpg)
-
-(TODO: explain experimental tool reference feature)
-
-The device does not need an additional power button: it auto-detects
-when the drop-indicator is switched off (because it stops sending updates), and
-then goes to deep sleep; waking up when the indicator is switched on again.
-The ATTiny only consumes < 0.8μA current when in deep sleep - easily
-outlasting the lifetime of the AA batteries many times ...
-
-### Display and Font Handling
-The ATTiny85 RAM is small (512 Byte), which does not allow for having a
-frame-buffer for the 128x64 display (1KiB) in memory as many implementations do.
-The fonts are compiled-in and directly copied from `PROGMEM`-memory.
-
-The I²C and OLED display code is freshly implemented with only the relevant
-features. The display-code only uses features from the SH1106 controller, so it
-is compatible with SH1106 and SSD1306 (you still need a compile-time option
-to distinguish the displays as there is a different pixel-offset).
-
-The fonts were [generated as C-Arrays][bdfont.data] from bitmap BDF
-fonts so that they can be compiled into the binary.
-Fonts can be 'sparse' and only contain characters really needed in the
-application; this is necessary as flash-memory in the ATTiny is pretty limited
-with 8KiB. The [bdfont.data] project provides [Plane 0] UTF8 support, which makes
-it easy to include special characters such as `ƒ`, `μ` or` ⚠`;
-it is a separate project, check it out if you need font-support in your small
-devices.
-
-### Code choices
-Even though binary space is limited, `float`-numbers are used for the
-calculations; it simplifies code in comparsion to fixed-point integer
-calculations (in particular as there are large differences in orders of
-magnitude).
-Given that we have enough code space, the readability of the code was more
-important.
-
 ### Install
 To build, install the `avr-gcc` toolchain and `avrdude`. There is no
 boot-loader, we directly program the chip with an AVR-compatible programmer
@@ -79,6 +28,61 @@ make USER_DEFINES="-DDISPLAY_I2C=0x78 -DINDICATOR_DECIMALS=3 -DSPHEROMETER_RADIU
 
 The default compile works with the Autoutlet dial indicator. If you use a
 Mitutoyo indicator, add `-DINDICATOR_MITUTOYO` to your `USER_DEFINES`.
+
+#### Mirror size choices for ƒ/N calculation
+If you want to change the list of apertures to choose from for the
+ƒ/N calculation (currently 6", 8", 10", 12" and 16") look for `aperture_items`
+in `main.cc`.
+
+### Interesting nitbits
+
+#### Display and Font Handling
+The ATTiny85 RAM is small (512 Byte), which does not allow for having a
+frame-buffer for the 128x64 display (1KiB) in memory as many implementations do.
+The fonts are compiled-in and directly copied from `PROGMEM`-memory.
+
+The I²C and OLED display code is freshly implemented with only the relevant
+features. The display-code only uses features from the SH1106 controller, so it
+is compatible with SH1106 and SSD1306 (you still need a compile-time option
+to distinguish the displays as there is a different pixel-offset).
+
+The fonts were [generated as compact C-Arrays][bdfont.data] from bitmap BDF
+fonts so that they can be compiled into the binary.
+
+Fonts can be 'sparse' and only contain characters really needed in the
+application. Also the encoding of each glyph is chosen to be optimal from a
+choice of various run-length-encodings. This is necessary as flash-memory in
+the ATTiny is pretty limited with 8KiB but we also use a fairly large font.
+The [bdfont.data] project provides [Plane 0] UTF8 support, which makes
+it easy to include special characters such as `ƒ`, `μ` or` ⚠`;
+it is a separate project, check it out if you need font-support in your small
+devices.
+
+#### Error propagation
+The error margins are done by having a (very simplistic) implementation of
+a number data type and operators that do error propagation. That makes
+the code very readable as the formula is written as if they were normal
+numbers. But the whole chain of calculations are based on this `ErrorFloat`
+type: the source of information, the diameter definition of the spherometer
+and the values read from the dial indicator include the error margins, which
+are then propagated through the spherometer calculation.
+
+All calculations are all done with the `float` datatype;
+even though this means somewhat larger code (as the ATTiny does not have a
+floating point unit), it makes the code very readable.
+Also: fixed point arithmetic would likely be somewhat complicated as we have
+to deal with many order of magnitude range (squaring very large and very small
+numbers).
+
+#### Sleep
+The device does not need an additional power button: it auto-detects
+when the drop-indicator is switched off (because it stops sending updates), and
+then goes to deep sleep; In that mode, the ATTiny only consumes < 0.8μA current
+(plus some current drawn from the display in sleep mode).
+
+The spherometer wakes up by registering a level interrupt on the indicator
+clock line: as soon as it sees activity there, it comes out of sleep and
+shows the relevant values.
 
 ![](../img/spherometer-devel.jpg)
 

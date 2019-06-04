@@ -40,5 +40,5 @@ display transition part is separate and can be glued to it later.
 
 All screws are M3.
 
-![](../img/base-plate.png)
 ![](../img/dial-case.png)
+![](../img/base-plate.png)
