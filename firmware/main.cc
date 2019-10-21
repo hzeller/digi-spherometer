@@ -114,13 +114,35 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 
 static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
   ErrorFloat sag = dial.value;
+  // For tool-referenced mode, we have to deal with roughly half
+  // the sag being contributed by the concave shape of the mirror and
+  // half by the convex shape of the tool. It is not exactly half, as
+  // the spherometer stands on balls, and positive ball correction is
+  // needed for the concave mirror and negative ball correction is for
+  // the convex tool.
+  //
+  // So if we calculate it correctly, the resulting formula would be
+  // 'slightly' longer than the standard spherometer formula
+  // (b being the ball radius, d leg radius):
+  // R = b+(((sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(-(4*s*b-2*d^2-s^2)/6-(4*b-3*s)^2/36)/(sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(4*b-3*s)/6)^(2)+d^2)/(2*((sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(-(4*s*b-2*d^2-s^2)/6-(4*b-3*s)^2/36)/(sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(4*b-3*s)/6))
+  // .. however, this mostly boils down to evening out
+  // positive and negative of the ball leg sizes, the rest
+  // of the terms contribute little.
+  // So, the tool referenced mode is very closely approximated by
+  // simply calculating the spherometer without ball correction and
+  // we're accurate well within very small margins (better than 0.1mm for
+  // the radius).
+
   if (tool_referenced) sag = sag / 2;
-  // TODO: figure out if this formula needs to be adapted for tool reference;
-  // Given that we are measuring a concave and convex surface, the ball
-  // correction probably needs to be adpated.
-  return dial.is_imperial
-    ? ((d_inch_squared + sag*sag) / (2*sag) + ball_r_inch)
-    : ((d_mm_squared + sag*sag) / (2*sag) + ball_r_mm);
+  ErrorFloat result = dial.is_imperial
+    ? ((d_inch_squared + sag*sag) / (2*sag))
+    : ((d_mm_squared + sag*sag) / (2*sag));
+  if (!tool_referenced) {
+    // In tool referenced mode, ball diameter evens out, so nothing to
+    // add.
+    result = result + (dial.is_imperial ? ball_r_inch : ball_r_mm);
+  }
+  return result;
 }
 
 // Get microcontroller to deep sleep. We enable a level changing interrupt
