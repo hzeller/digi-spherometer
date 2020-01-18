@@ -35,6 +35,7 @@ Count  | Part                     | Footprint          | Designators  | Remarks
 3      | Resistor 47k             | 0603 (1608 Metric) | R1, R2, R3   |
 2      | MMBTA06LT1HTSA1          | SOT23              | Q1, Q2       | Any SOT23 NPN will do
 1      | Panasonic EVQ-P7L01P     | (custom)           | SW1          |
+1      | SH1106 Display (i2c)     | (custom)           | Disp         |
 
 Then of course a 1.3" SH1106 module with I²C interface. Make sure the pins
 come in sequence `SDA`, `SCL`, `VCC`, `GND` if looked from the back.
