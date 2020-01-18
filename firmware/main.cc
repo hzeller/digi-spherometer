@@ -132,8 +132,8 @@ static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
   // simply calculating the spherometer without ball correction and
   // we're accurate well within very small margins (better than 0.1mm for
   // the radius).
-
   if (tool_referenced) sag = sag / 2;
+
   ErrorFloat result = dial.is_imperial
     ? ((d_inch_squared + sag*sag) / (2*sag))
     : ((d_mm_squared + sag*sag) / (2*sag));
@@ -191,8 +191,9 @@ private:
   bool previous_pressed_ = false;
 };
 
-void ShowRadiusPage(SH1106Display *disp, DialData dial, uint8_t dia_choice,
-                    bool tool_referenced) {
+static void ShowRadiusPage(SH1106Display *disp, DialData dial,
+                           uint8_t dia_choice,
+                           bool tool_referenced) {
   const ErrorFloat error_radius = calc_r(dial, tool_referenced);
   const float radius = error_radius.nominal;
   // Calculating the sag values to radius in their respective units.
@@ -324,9 +325,11 @@ int main() {
     else if (off_cycles > kPowerOffAfterCycles) {
       disp.SetOn(false);
       button.SleepMode(true);
+      I2CMaster::Enable(false);
       SleepTillDialIndicatorClocksAgain();  // ZZzzz...
 
       // ... We're here after wakeup
+      I2CMaster::Enable(true);
       button.SleepMode(false);
       disp.Reset();      // Might've slept a long time. Make sure display ok.
       tool_referenced = false;
