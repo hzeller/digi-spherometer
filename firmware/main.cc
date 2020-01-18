@@ -171,6 +171,15 @@ class Button {
 public:
   Button() { PORTB |= BUTTON_BIT; /* pullup */}
 
+  // While at sleep, we don't want button presses to use power. Also, this
+  // is a nice way to measure if we are in sleep mode.
+  void SleepMode(bool s) {
+    if (s) {
+      PORTB &= ~BUTTON_BIT;
+    } else {
+      PORTB |= BUTTON_BIT;
+    }
+  }
   bool clicked() {
     const bool current_press = (PINB & BUTTON_BIT) == 0;  // negative logic
     const bool before = previous_pressed_;
@@ -314,8 +323,11 @@ int main() {
     }
     else if (off_cycles > kPowerOffAfterCycles) {
       disp.SetOn(false);
+      button.SleepMode(true);
       SleepTillDialIndicatorClocksAgain();  // ZZzzz...
+
       // ... We're here after wakeup
+      button.SleepMode(false);
       disp.Reset();      // Might've slept a long time. Make sure display ok.
       tool_referenced = false;
     }
