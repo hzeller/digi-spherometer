@@ -29,6 +29,20 @@ make USER_DEFINES="-DDISPLAY_I2C=0x78 -DINDICATOR_DECIMALS=3 -DSPHEROMETER_RADIU
 The default compile works with the Autoutlet dial indicator. If you use a
 Mitutoyo indicator, add `-DINDICATOR_MITUTOYO` to your `USER_DEFINES`.
 
+These are the configuration options, settable via defines in the make commandline:
+
+define                   | default value | Description
+------------------------ |---------------|------------------------------------
+DISP_SSD1306             | undefined     | Define if SSD1306 instead of SH1106 display is used
+DISPLAY_I2C              | 0x78          | I²C address of display.
+INDICATOR_DECIMALS       | 3             | Millimeter decimals supported. 3 means: resolution 1μm
+INDICATOR_MITUTOYO       | undefined     | Read Mitutoyo instead of Autolet indicator
+SPHEROMETER_RADIUS_MM    | 50.000        | Radius of spherometer ring.
+SPHEROMETER_RADIUS_ERROR_MM | 0.1        | Accuracy of the spherometer radius. Influences error calculation
+SPHEROMETER_FEET_BALL_DIAMETER_MM | 12.7 | Diameter of 'feet'-balls.
+DISABLE_TOOL_REFERENCE_FEATURE | undefined | If defined: Disable tool reference feature (simpler UI)
+ALLOW_CONVEX_MEASUREMENTS| undefined     | Allow to measure also convex mirros
+
 #### Mirror size choices for ƒ/N calculation
 If you want to change the list of apertures to choose from for the
 ƒ/N calculation (currently 6", 8", 10", 12" and 16") look for `aperture_items`

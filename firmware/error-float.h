@@ -41,6 +41,9 @@ constexpr inline ErrorFloat operator*(ErrorFloat a, ErrorFloat b) {
 constexpr inline ErrorFloat operator+(ErrorFloat a, ErrorFloat b) {
   return ErrorFloat(a.low+b.low, a.nominal+b.nominal, a.high+b.high);
 }
+constexpr inline ErrorFloat operator-(ErrorFloat a, ErrorFloat b) {
+  return ErrorFloat(a.low-b.high, a.nominal-b.nominal, a.high-b.low);
+}
 constexpr inline ErrorFloat operator/(ErrorFloat a, ErrorFloat b) {
   return ErrorFloat(a.low/b.high, a.nominal/b.nominal, a.high/b.low);
 }

@@ -34,6 +34,14 @@
 #include "font-smalltext.h"
 #include "font-tinytext.h"
 
+#if defined(ALLOW_CONVEX_MEASUREMENTS)
+// If we do convex measurements, also providing tool reference mode would
+// be confusing.
+#  ifndef DISABLE_TOOL_REFERENCE_FEATURE
+#     define DISABLE_TOOL_REFERENCE_FEATURE
+#   endif
+#endif
+
 // ------------------------------ configurable parameters ------------
 /*
  * Choices of mirror diameters to be cylced through. In every workshop, there
@@ -88,7 +96,7 @@ static constexpr ErrorFloat d_inch_squared = d_inch * d_inch;
 // Data coming back from the dial indicator. The dial indicator knows
 // its internal format and returns values as Millimeter or Inch.
 // This is filled by the dial-indicator-specific implementation of
-// ReadDialIndicator()
+// ReadDialIndicator() (in dial-indicator-*.h)
 struct DialData {
   DialData() : value(0), negative(false), is_imperial(false), raw_count(0) {}
   ErrorFloat value;   // Absolute value in mm or inches.
@@ -112,6 +120,7 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #  include "dial-indicator-autoutlet.h"
 #endif
 
+// Returns the absolute value of the sphere radius.
 static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
   ErrorFloat sag = dial.value;
   // For tool-referenced mode, we have to deal with roughly half
@@ -134,20 +143,21 @@ static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
   // the radius).
   if (tool_referenced) sag = sag / 2;
 
-  ErrorFloat result = dial.is_imperial
+  const ErrorFloat result = dial.is_imperial
     ? ((d_inch_squared + sag*sag) / (2*sag))
     : ((d_mm_squared + sag*sag) / (2*sag));
-  if (!tool_referenced) {
-    // In tool referenced mode, ball diameter evens out, so nothing to
-    // add.
-    result = result + (dial.is_imperial ? ball_r_inch : ball_r_mm);
-  }
-  return result;
+
+  if (tool_referenced)
+    return result;   // No correction needed (see above)
+
+  // Correct depending on negative sag (=concave) or positive sag (=convex)
+  const ErrorFloat ball_correct = (dial.is_imperial ? ball_r_inch : ball_r_mm);
+  return dial.negative ? result + ball_correct : result - ball_correct;
 }
 
 // Get microcontroller to deep sleep. We enable a level changing interrupt
 // to come back online. We are listening on the clock line of the dial
-// indicator for that. That way, we don't need any button.
+// indicator for that. That way, we don't need any own power button.
 EMPTY_INTERRUPT(PCINT0_vect);
 static void SleepTillDialIndicatorClocksAgain() {
   cli();
@@ -172,7 +182,7 @@ public:
   Button() { PORTB |= BUTTON_BIT; /* pullup */}
 
   // While at sleep, we don't want button presses to use power. Also, this
-  // is a nice way to measure if we are in sleep mode.
+  // is a nice way to measure from the outside if we are in sleep mode.
   void SleepMode(bool s) {
     if (s) {
       PORTB &= ~BUTTON_BIT;
@@ -235,7 +245,9 @@ static void ShowRadiusPage(SH1106Display *disp, DialData dial,
     // Print focal length in chosen units.
     constexpr int line2 = 16;
     x = disp->Print(font_smalltext, 0, line2, "ƒ=");
-    const int32_t display_f = roundf(dial.is_imperial ? 10*f : f);
+    int32_t display_f = roundf(dial.is_imperial ? 10*f : f);
+    if (!dial.negative) display_f = -display_f;  // Convex measurements
+
     x = disp->Print(font_smalltext, x, line2,
                     strfmt(display_f, dial.is_imperial ? 1:0, 5));
     const int32_t display_error_f = roundf(dial.is_imperial ? 10*f_err : f_err);
@@ -253,13 +265,12 @@ static void ShowRadiusPage(SH1106Display *disp, DialData dial,
 
   // -- Printing the radius in a large font.
 
-  // Make sure that it is clear we're talking about the sphere radius
-  disp->Print(font_smalltext, 0, 32, "r=");
-
   // If the value is too large, we don't want to overflow the display.
   // Instead, we clamp it to highest value and show a little > indicator.
   if (is_overflow) {
     disp->Print(font_smalltext, 0, 48, ">");  // 'overflow' indicator
+  } else if (!dial.negative) {                // Convex measurements.
+    disp->Print(font_bignumber, 0, 32, "-");
   } else {
 #ifndef DISABLE_TOOL_REFERENCE_FEATURE
     disp->Print(font_smalltext, 0, 48, tool_referenced ? "⯊" : "▂");
@@ -267,6 +278,9 @@ static void ShowRadiusPage(SH1106Display *disp, DialData dial,
     disp->Print(font_smalltext, 0, 48, " ");
 #endif
   }
+
+  // Make sure that it is clear we're talking about the sphere radius
+  disp->Print(font_smalltext, 0, 32, "r=");
 
   // Different formatting of numbers in different units, including suffix
   if (dial.is_imperial) {
@@ -295,7 +309,7 @@ int main() {
   DialData last_dial;
   uint8_t last_aperture_choice = 0xff;  // outside range, so guaranteed refresh
 
-  uint8_t off_cycles = 0;
+  uint8_t indicator_off_waiting_cycles = 0;
   uint8_t aperture_choice = 0;
   bool tool_referenced = false;
 
@@ -310,11 +324,11 @@ int main() {
     // we detect the indicator to be off and going to sleep, we show the
     // github message on the display for people to find the project.
     if (!indicator_on)
-      off_cycles++;
+      indicator_off_waiting_cycles++;
     else
-      off_cycles = 0;
+      indicator_off_waiting_cycles = 0;
 
-    if (off_cycles == kStartShowingOutro) {
+    if (indicator_off_waiting_cycles == kStartShowingOutro) {
       disp.ClearScreen();
       last_aperture_choice = 0xff;  // Force refresh of screen after we get out
       disp.Print(font_smalltext, 0, 0, "©Henner Zeller");
@@ -322,7 +336,7 @@ int main() {
       disp.Print(font_tinytext, 0, 32, "digi-spherometer");
       disp.Print(font_tinytext, 0, 48, "    GNU GPL");
     }
-    else if (off_cycles > kPowerOffAfterCycles) {
+    else if (indicator_off_waiting_cycles > kPowerOffAfterCycles) {
       disp.SetOn(false);
       button.SleepMode(true);
       I2CMaster::Enable(false);
@@ -335,7 +349,7 @@ int main() {
       tool_referenced = false;
     }
 
-    if (off_cycles)
+    if (indicator_off_waiting_cycles)
       continue;
 
     if (last_aperture_choice == 0xff
@@ -352,9 +366,15 @@ int main() {
       if (button.clicked()) tool_referenced = !tool_referenced;
       disp.Print(font_smalltext, 60, 0,  " ▂ flat", !tool_referenced);
       disp.Print(font_smalltext, 60, 16, " ⯊ tool", tool_referenced);
-#endif
+#endif  // DISABLE_TOOL_REFERENCE_FEATURE
       disp.Print(font_bignumber, 12, 32, "ZERO");
     }
+
+#ifndef ALLOW_CONVEX_MEASUREMENTS
+    /*
+     * If we are not allowing convex measurements, we use a positive sag
+     * value as indication that indicator is not zeroed yet
+     */
     else if (!dial.negative) {
       disp.Print(font_bignumber, 46, 0, "⚠");
       disp.Print(font_smalltext, 0, 32, "Please zero on");
@@ -362,8 +382,10 @@ int main() {
       disp.Print(font_smalltext, 8, 48, "flat surface");
 #else
       disp.Print(font_smalltext, 8, 48, "ref. surface");
-#endif
+#endif  // DISABLE_TOOL_REFERENCE_FEATURE
     }
+#endif  // ALLOW_CONVEX_MEASUREMENTS
+
     else {
       if (button.clicked()) {
         aperture_choice += 1;

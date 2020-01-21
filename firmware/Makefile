@@ -29,8 +29,16 @@ DEFINES=-DF_CPU=8000000UL
 # In case you always want to reference from a flat surface, you can disable
 # the tool reference feature to avoid accidentally enabling it. In particular
 # if you have a indicator that can keep an absolute position such as the
-# Mitutoyo, you might not want this
+# Mitutoyo, you might not want this and simplify the user interface.
+#
+# Also if we allow convex measurements, this feature will be switched of for
+# UI comlexity reasos.
 #DEFINES+=-DDISABLE_TOOL_REFERENCE_FEATURE
+
+# Allowing convex measurements means allowing for positive sag. This
+# means the UI can't warn about non-zeroed range anymore, but it is more
+# flexible.
+#DEFINES+=-DALLOW_CONVEX_MEASUREMENTS
 
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
