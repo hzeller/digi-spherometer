@@ -39,9 +39,10 @@ INDICATOR_DECIMALS       | 3             | Millimeter decimals supported. 3 mean
 INDICATOR_MITUTOYO       | undefined     | Read Mitutoyo instead of Autolet indicator
 SPHEROMETER_RADIUS_MM    | 50.000        | Radius of spherometer ring.
 SPHEROMETER_RADIUS_ERROR_MM | 0.1        | Accuracy of the spherometer radius. Influences error calculation
-SPHEROMETER_FEET_BALL_DIAMETER_MM | 12.7 | Diameter of 'feet'-balls.
+SPHEROMETER_FEET_BALL_DIAMETER_MM | 12.7 | Diameter of 'feet'-balls used for the ball correction.
 DISABLE_TOOL_REFERENCE_FEATURE | undefined | If defined: Disable tool reference feature (simpler UI)
-ALLOW_CONVEX_MEASUREMENTS| undefined     | Allow to measure also convex mirros
+ALLOW_CONVEX_MEASUREMENTS| undefined     | Allow to measure also convex surfaces (shows radius negative and applies appropriate ball correction). This implies DISABLE_TOOL_REFERENCE_FEATURE (to simplify UI).
+SCREENSAVER_SAMPLE_COUNT | undefined     | A number. If defined, turn off display after this number of samples with no change in measurement (good value would be around 1000). Use this for indicators such as Mitotoyo that don't auto-power off somewhat quickly. Reduces current consumption from ~15mA to ~4mA.
 
 #### Mirror size choices for ƒ/N calculation
 If you want to change the list of apertures to choose from for the

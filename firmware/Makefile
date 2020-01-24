@@ -40,6 +40,16 @@ DEFINES=-DF_CPU=8000000UL
 # flexible.
 #DEFINES+=-DALLOW_CONVEX_MEASUREMENTS
 
+# Allow screen-saver to activate after this count of unchanged measurements.
+# This switches the display off, preserving power.
+# This is in particular useful for dial indicators that have a very long
+# time before they go to auto-off, such as the Mitotoyo. The Autolet, however
+# will auto-switch-off after a while so there is less of a need to have a
+# screen-saver. The value represents number of measurements that read
+# exactly the same. Valid range: 0..65535
+#DEFINES+=-DSCREENSAVER_SAMPLE_COUNT=1000
+
+
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
 

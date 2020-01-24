@@ -103,6 +103,14 @@ struct DialData {
   bool negative;      // true if the value is negative.
   bool is_imperial;   // Reading is in imperial units
   int32_t raw_count;  // the internal raw value.
+
+  bool operator == (const DialData other) const {
+    return raw_count == other.raw_count && negative == other.negative
+      && is_imperial == other.is_imperial;
+  }
+  bool operator != (const DialData other) const {
+    return !(*this == other);
+  }
 };
 
 // The dial indicator header needs to provide this function.
@@ -201,6 +209,43 @@ private:
   bool previous_pressed_ = false;
 };
 
+#ifdef SCREENSAVER_SAMPLE_COUNT
+class Screensaver {
+public:
+  bool CheckIsActive(bool measurement_is_same, SH1106Display *disp) {
+    /*
+     * if we measure the same value for SCREENSAVER_SAMPLE_COUNT times in
+     * a row, we switch off the display. This is a useful feature for
+     * dial indicators that don't auto-power off.
+     * It reduces our current consumption from ~15mA to about ~4mA
+     * (Not nearly as down to the 5μA when in deep sleep of course).
+     */
+    if (measurement_is_same) {
+      if (wait_cycles_ < SCREENSAVER_SAMPLE_COUNT) {
+        wait_cycles_++;
+      } else {
+        disp->SetOn(false);
+        return true;
+      }
+    } else {
+      if (wait_cycles_) {  // Was possibly screen-saving before.
+        disp->SetOn(true);
+      }
+      wait_cycles_ = 0;
+    }
+    return false;
+  }
+
+private:
+  int16_t wait_cycles_ = 0;
+};
+#else
+class Screensaver {
+public:
+  bool CheckIsActive(bool, SH1106Display *) { return false; }
+};
+#endif
+
 static void ShowRadiusPage(SH1106Display *disp, DialData dial,
                            uint8_t dia_choice,
                            bool tool_referenced) {
@@ -217,7 +262,7 @@ static void ShowRadiusPage(SH1106Display *disp, DialData dial,
   uint8_t x;
   // -- Print focal length and ƒ/-Number
   if (is_overflow) {
-    // Don't show any numbers in that case. Not every useful.
+    // Don't show any numbers in that case. Not very useful.
     for (int y = 0; y < 32; y += 8)
       disp->FillStripeRange(0, 127, y, 0x00);
     disp->Print(font_bignumber, 46, 0, "⚠");
@@ -311,6 +356,7 @@ int main() {
 
   uint8_t indicator_off_waiting_cycles = 0;
   uint8_t aperture_choice = 0;
+  Screensaver screensaver;
   bool tool_referenced = false;
 
   constexpr uint8_t kPowerOffAfterCycles = 50;
@@ -347,9 +393,13 @@ int main() {
       button.SleepMode(false);
       disp.Reset();      // Might've slept a long time. Make sure display ok.
       tool_referenced = false;
+      last_dial.raw_count = 0xffffffff;  // Doesn't look like any current sample
     }
 
     if (indicator_off_waiting_cycles)
+      continue;
+
+    if (screensaver.CheckIsActive(dial == last_dial, &disp))
       continue;
 
     if (last_aperture_choice == 0xff
@@ -391,9 +441,7 @@ int main() {
         aperture_choice += 1;
         if (aperture_choice >= kApertureChoices) aperture_choice = 0;
       }
-      if (dial.raw_count != last_dial.raw_count
-          || dial.is_imperial != last_dial.is_imperial
-          || last_aperture_choice != aperture_choice) {
+      if (dial != last_dial || aperture_choice != last_aperture_choice) {
         ShowRadiusPage(&disp, dial, aperture_choice, tool_referenced);
       }
     }

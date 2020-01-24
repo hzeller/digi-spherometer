@@ -30,6 +30,7 @@
 class SH1106Display {
 public:
   SH1106Display();
+  SH1106Display(const SH1106Display &) = delete;
 
   // Re-initialize.
   void Reset();
