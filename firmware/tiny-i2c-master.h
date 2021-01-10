@@ -18,13 +18,6 @@
 #include <stdint.h>
 #include <avr/io.h>
 
-// These are for Attiny{2,4,8}5.
-#define USI_DDR       DDRB
-#define USI_PORT      PORTB
-#define USI_PIN       PINB
-#define USI_PORT_SDA  0
-#define USI_PORT_SCL  2
-
 // A simple I2C master that works with ATTiny devices.
 class I2CMaster {
 public:
@@ -34,7 +27,4 @@ public:
   static void StartTransmission(uint8_t address);
   static void Write(uint8_t b);
   static void FinishTransmission();
-
-private:
-  static uint8_t Transfer(uint8_t mode, uint8_t b);
 };

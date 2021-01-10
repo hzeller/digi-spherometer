@@ -19,11 +19,20 @@
 
 #include <util/delay.h>
 
+// These are for Attiny{2,4,8}5.
+#define USI_DDR       DDRB
+#define USI_PORT      PORTB
+#define USI_PIN       PINB
+#define USI_PORT_SDA  0
+#define USI_PORT_SCL  2
+
 // The delay _should_ be more, but looks like we can drive the SSD1306/SH1106
 // a lot faster. Which is good (even a delay of 0 seems to work fine, but
 // let's not push it too far :)).
 static constexpr uint8_t DELAY_2TWI = 0;  // > 4.5μs
 static constexpr uint8_t DELAY_4TWI = 0;  // > 4μs
+
+static uint8_t Transfer(uint8_t mode, uint8_t b);
 
 void I2CMaster::Init() {
   Enable(true);
@@ -90,7 +99,7 @@ void I2CMaster::Write(uint8_t b) {
   Transfer(USISR_1bit, 0x00);
 }
 
-uint8_t I2CMaster::Transfer(uint8_t mode, uint8_t b) {
+static uint8_t Transfer(uint8_t mode, uint8_t b) {
   USIDR = b;
   USISR = mode;
   constexpr uint8_t clk_icr = (0 << USISIE) | (0 << USIOIE) // !use interrupts
