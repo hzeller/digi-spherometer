@@ -1,5 +1,4 @@
 # <h.zeller@acm.org>
-DEFINES=-DF_CPU=8000000UL
 
 # If the oled display is using a SSD1306 controller (typically the 0.96" are),
 # then use this define
@@ -49,21 +48,40 @@ DEFINES=-DF_CPU=8000000UL
 # exactly the same. Valid range: 0..65535
 #DEFINES+=-DSCREENSAVER_SAMPLE_COUNT=1000
 
-
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
 
+# Notes: to change using another architecture, e.g. some more beefy Atmega
+# found in Arduinos
+#   - change the TARGET_ARCH (e.g. atmega328 for a Arduino Nano)
+#   - change the AVRDUDE_PART to the correct partnumber (e.g. m328p)
+#   - choose the I2C_IMPL to be one of i2c-master-usi.o  or i2c-master-twi.o
+#     (usi is used for attiny devices, twi for larger atmega devices)
 TARGET_ARCH=-mmcu=attiny85
+AVRDUDE_ARGS=-p t85 -c stk500v2
+I2C_IMPL=i2c-master-usi.o
+CPU_SPEED=8000000UL
+
+# e.g. for Nano, this would be something like this
+#TARGET_ARCH=-mmcu=atmega328
+#AVRDUDE_ARGS=-p m328p -c arduino -b57600
+#I2C_IMPL=i2c-master-twi.o
+#CPU_SPEED=16000000UL
+
+DEFINES+=-DF_CPU=$(CPU_SPEED)
+
 CC=avr-gcc
 CFLAGS=-Os -g -W -Wall -Wextra -ffunction-sections -fdata-sections -mcall-prologues $(DEFINES) -I.
 CXX=avr-g++
 CXXFLAGS=$(CFLAGS) -std=c++11
 AVRDUDE_DEVICE ?= /dev/ttyUSB0
-AVRDUDE     = avrdude -p t85 -c stk500v2 -P $(AVRDUDE_DEVICE)
+AVRDUDE     = avrdude $(AVRDUDE_ARGS) -P $(AVRDUDE_DEVICE)
 FLASH_CMD   = $(AVRDUDE) -e -U flash:w:main.hex
 LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections
-OBJECTS=main.o sh1106-display.o tiny-i2c-master.o strfmt.o \
-	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o
+
+OBJECTS=main.o sh1106-display.o  strfmt.o \
+	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o \
+        $(I2C_IMPL)
 
 all : main.hex
 

@@ -15,11 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "tiny-i2c-master.h"
+// This is an implementation of the minimal i2c interface using USI, which
+// is implemented in some Atmel microcontrollers.
+
+#include "i2c-master.h"
 
 #include <util/delay.h>
 
-// These are for Attiny{2,4,8}5.
+// These are for Attiny{2,4,8}5. Might be different for others.
 #define USI_DDR       DDRB
 #define USI_PORT      PORTB
 #define USI_PIN       PINB

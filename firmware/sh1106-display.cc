@@ -20,6 +20,7 @@
 #include <avr/pgmspace.h>
 #include <stdlib.h>
 
+#include "i2c-master.h"
 #include "utf8-iterator.h"
 
 // SH1106 Datasheet pp19...31                          Command Table Entry

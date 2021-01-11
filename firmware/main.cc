@@ -28,6 +28,7 @@
 #include "sh1106-display.h"
 #include "strfmt.h"
 #include "error-float.h"
+#include "i2c-master.h"
 
 // Compiled-in fonts we're using for the UI.
 #include "font-bignumber.h"
@@ -168,6 +169,7 @@ static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
 // indicator for that. That way, we don't need any own power button.
 EMPTY_INTERRUPT(PCINT0_vect);
 static void SleepTillDialIndicatorClocksAgain() {
+  // TODO: make this work for Atmega and choose level change interrupt there
   cli();
   GIMSK |= (1<<PCIE);   // level change interrupt
   PCMSK = CLK_BIT;      // Switch on level detection on the CLK of indicator

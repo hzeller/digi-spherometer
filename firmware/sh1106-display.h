@@ -17,7 +17,6 @@
 
 #include <stdint.h>
 
-#include "tiny-i2c-master.h"
 #include "bdfont-support.h"
 
 // A super basic interface to the SH1106 display that doesn't have any
