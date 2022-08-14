@@ -7,6 +7,9 @@
 *.3mf
 *bak
 *-fab*
+fp-info-cache
+spherometer-display-backups
 frame-generated-*
 compiler-flags
-
+.direnv
+.envrc
