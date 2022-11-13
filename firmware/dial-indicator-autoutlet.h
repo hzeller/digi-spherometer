@@ -95,15 +95,15 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
   // than the Mitutoyos.
 #if INDICATOR_DECIMALS == 3
   if (result.data.is_imperial) {
-    data->value = { result.data.abs_value * 0.00005, 0.0002 };
+    data->value = { result.data.abs_value * 0.00005f, 0.0002 };
   } else {
-    data->value = { result.data.abs_value * 0.001, 0.005 };
+    data->value = { result.data.abs_value * 0.001f, 0.005 };
   }
 #elif INDICATOR_DECIMALS == 2
   if (result.data.is_imperial) {
-    data->value = { result.data.abs_value * 0.0005, 0.002 };
+    data->value = { result.data.abs_value * 0.0005f, 0.002 };
   } else {
-    data->value = { result.data.abs_value * 0.01, 0.05 };
+    data->value = { result.data.abs_value * 0.01f, 0.05 };
   }
 #else
 #  error "Unhandled INDICATOR_DECIMALS value. Supporting 2 and 3."

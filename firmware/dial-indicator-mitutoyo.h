@@ -79,9 +79,9 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 
   // According to datasheet of 543-791B, we have an error of 0.0001" or 3μm.
   if (data->is_imperial) {
-    data->value = { abs_value * 0.00001, 0.0001 };
+    data->value = { abs_value * 0.00001f, 0.0001 };
   } else {
-    data->value = { abs_value * 0.001, 0.003 };
+    data->value = { abs_value * 0.001f, 0.003 };
   }
   data->value.force_positive();
   return true;
