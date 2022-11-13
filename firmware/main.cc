@@ -72,8 +72,8 @@ static constexpr struct {
 #ifndef SPHEROMETER_RADIUS_ERROR_MM
 #  define SPHEROMETER_RADIUS_ERROR_MM 0.1
 #endif
-static constexpr ErrorFloat d_mm(SPHEROMETER_RADIUS_MM,
-                                 SPHEROMETER_RADIUS_ERROR_MM);
+static constexpr ErrorFloat leg_d_mm(SPHEROMETER_RADIUS_MM,
+                                     SPHEROMETER_RADIUS_ERROR_MM);
 
 #ifndef SPHEROMETER_FEET_BALL_DIAMETER_MM
 #  define SPHEROMETER_FEET_BALL_DIAMETER_MM 12.7
@@ -89,10 +89,10 @@ static constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
 
 // ------------------------------ nothing to be changed below --------
 // ... derived from the above; let's compile-time calculate them.
-static constexpr ErrorFloat d_inch = d_mm / 25.4f;
+static constexpr ErrorFloat leg_d_inch = leg_d_mm / 25.4f;
 static constexpr ErrorFloat ball_r_inch = ball_r_mm / 25.4f;
-static constexpr ErrorFloat d_mm_squared = d_mm * d_mm;
-static constexpr ErrorFloat d_inch_squared = d_inch * d_inch;
+static constexpr ErrorFloat leg_d_mm_squared = leg_d_mm * leg_d_mm;
+static constexpr ErrorFloat leg_d_inch_squared = leg_d_inch * leg_d_inch;
 
 // Data coming back from the dial indicator. The dial indicator knows
 // its internal format and returns values as Millimeter or Inch.
@@ -152,9 +152,11 @@ static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
   // the radius).
   if (tool_referenced) sag = sag / 2;
 
+  // Minimize calculations: use compile-time precalc half squared leg distance.
+  const ErrorFloat saghalf = sag / 2;
   const ErrorFloat result = dial.is_imperial
-    ? ((d_inch_squared + sag*sag) / (2*sag))
-    : ((d_mm_squared + sag*sag) / (2*sag));
+    ? saghalf + (leg_d_inch_squared/2) / sag
+    : saghalf + (leg_d_mm_squared/2) / sag;
 
   if (tool_referenced)
     return result;   // No correction needed (see above)
