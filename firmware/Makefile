@@ -71,13 +71,13 @@ CPU_SPEED=8000000UL
 DEFINES+=-DF_CPU=$(CPU_SPEED)
 
 CC=avr-gcc
-CFLAGS=-Os -g -W -Wall -Wextra -ffunction-sections -fdata-sections -mcall-prologues $(DEFINES) -I.
+CFLAGS=-Os -g -W -Wall -Wextra -fno-split-wide-types -fno-tree-scev-cprop -ffunction-sections -fdata-sections -mcall-prologues $(DEFINES) -I.
 CXX=avr-g++
 CXXFLAGS=$(CFLAGS) -std=c++11
 AVRDUDE_DEVICE ?= /dev/ttyUSB0
 AVRDUDE     = avrdude $(AVRDUDE_ARGS) -P $(AVRDUDE_DEVICE)
 FLASH_CMD   = $(AVRDUDE) -e -U flash:w:main.hex
-LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections
+LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections,-relax
 
 OBJECTS=main.o sh1106-display.o  strfmt.o \
 	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o \
