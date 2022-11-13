@@ -21,7 +21,6 @@ popt.SetOutputDirectory(plotDir)
 
 # Set some important plot options:
 popt.SetPlotFrameRef(False)
-popt.SetLineWidth(FromMM(0.35))
 
 popt.SetAutoScale(False)
 popt.SetScale(1)

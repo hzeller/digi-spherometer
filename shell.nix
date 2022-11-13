@@ -6,7 +6,11 @@
 pkgs.mkShell {
   buildInputs = with pkgs;
     [
+      git
+      python3
       kicad
+      python310Packages.kicad
+      zip
       pkgsCross.avr.buildPackages.gcc8
       avrdude
       openscad
