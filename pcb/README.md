@@ -48,5 +48,8 @@ This board is soldered to the back of a 1.3" OLED display
 
 ![](../img/spherometer-display-pcb.png)
 
+Also [shared here on OshPark](https://oshpark.com/projects/MvLMlrob); to keep
+things thin, order with 0.8mm thickness.
+
 ### View through acrylic bottom
 ![](../img/spherometer-bottom.jpg)
