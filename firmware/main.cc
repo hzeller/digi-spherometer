@@ -35,14 +35,6 @@
 #include "font-smalltext.h"
 #include "font-tinytext.h"
 
-#if defined(ALLOW_CONVEX_MEASUREMENTS)
-// If we do convex measurements, also providing tool reference mode would
-// be confusing.
-#  ifndef DISABLE_TOOL_REFERENCE_FEATURE
-#     define DISABLE_TOOL_REFERENCE_FEATURE
-#   endif
-#endif
-
 // ------------------------------ configurable parameters ------------
 /*
  * Choices of mirror diameters to be cylced through. In every workshop, there
@@ -130,8 +122,14 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #endif
 
 // Returns the absolute value of the sphere radius.
-static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
+static ErrorFloat calc_r(DialData dial, bool
+#if TOOL_REFERENCE_FEATURE
+                         tool_referenced
+#endif
+                         ){
   ErrorFloat sag = dial.value;
+
+#if TOOL_REFERENCE_FEATURE
   // For tool-referenced mode, we have to deal with roughly half
   // the sag being contributed by the concave shape of the mirror and
   // half by the convex shape of the tool. It is not exactly half, as
@@ -151,15 +149,18 @@ static ErrorFloat calc_r(DialData dial, bool tool_referenced) {
   // we're accurate well within very small margins (better than 0.1mm for
   // the radius).
   if (tool_referenced) sag = sag / 2;
+#endif
 
   // Minimize calculations: use compile-time precalc half squared leg distance.
   const ErrorFloat saghalf = sag / 2;
-  const ErrorFloat result = dial.is_imperial
-    ? saghalf + (leg_d_inch_squared/2) / sag
-    : saghalf + (leg_d_mm_squared/2) / sag;
+  const ErrorFloat result = (dial.is_imperial
+                             ? saghalf + (leg_d_inch_squared/2) / sag
+                             : saghalf + (leg_d_mm_squared/2) / sag);
 
+#if TOOL_REFERENCE_FEATURE
   if (tool_referenced)
     return result;   // No correction needed (see above)
+#endif
 
   // Correct depending on negative sag (=concave) or positive sag (=convex)
   const ErrorFloat ball_correct = (dial.is_imperial ? ball_r_inch : ball_r_mm);
@@ -321,7 +322,7 @@ static void ShowRadiusPage(SH1106Display *disp, DialData dial,
   } else if (!dial.negative) {                // Convex measurements.
     disp->Print(font_bignumber, 0, 32, "-");
   } else {
-#ifndef DISABLE_TOOL_REFERENCE_FEATURE
+#if TOOL_REFERENCE_FEATURE
     disp->Print(font_smalltext, 0, 48, tool_referenced ? "⯊" : "▂");
 #else
     disp->Print(font_smalltext, 0, 48, " ");
@@ -361,7 +362,11 @@ int main() {
   uint8_t indicator_off_waiting_cycles = 0;
   uint8_t aperture_choice = 0;
   Screensaver screensaver;
+#if TOOL_REFERENCE_FEATURE
   bool tool_referenced = false;
+#else
+  constexpr bool tool_referenced = false;
+#endif
 
   constexpr uint8_t kPowerOffAfterCycles = 50;
   constexpr uint8_t kStartShowingOutro = 4;
@@ -396,7 +401,9 @@ int main() {
       I2CMaster::Enable(true);
       button.SleepMode(false);
       disp.Reset();      // Might've slept a long time. Make sure display ok.
+#if TOOL_REFERENCE_FEATURE
       tool_referenced = false;
+#endif
       last_dial.raw_count = 0xffffffff;  // Doesn't look like any current sample
     }
 
@@ -414,17 +421,17 @@ int main() {
     }
 
     if (is_flat(dial.raw_count)) {
-#ifdef DISABLE_TOOL_REFERENCE_FEATURE
-      disp.Print(font_smalltext, 48, 0, "flat");
-#else
+#if TOOL_REFERENCE_FEATURE
       if (button.clicked()) tool_referenced = !tool_referenced;
       disp.Print(font_smalltext, 60, 0,  " ▂ flat", !tool_referenced);
       disp.Print(font_smalltext, 60, 16, " ⯊ tool", tool_referenced);
-#endif  // DISABLE_TOOL_REFERENCE_FEATURE
+#else
+      disp.Print(font_smalltext, 48, 0, "flat");
+#endif  // TOOL_REFERENCE_FEATURE
       disp.Print(font_bignumber, 12, 32, "ZERO");
     }
 
-#ifndef ALLOW_CONVEX_MEASUREMENTS
+#if not ALLOW_CONVEX_MEASUREMENTS
     /*
      * If we are not allowing convex measurements, we use a positive sag
      * value as indication that indicator is not zeroed yet
@@ -432,14 +439,15 @@ int main() {
     else if (!dial.negative) {
       disp.Print(font_bignumber, 46, 0, "⚠");
       disp.Print(font_smalltext, 0, 32, "Please zero on");
-#ifdef DISABLE_TOOL_REFERENCE_FEATURE
-      disp.Print(font_smalltext, 8, 48, "flat surface");
-#else
+#if TOOL_REFERENCE_FEATURE
       disp.Print(font_smalltext, 8, 48, "ref. surface");
-#endif  // DISABLE_TOOL_REFERENCE_FEATURE
+#else
+      disp.Print(font_smalltext, 8, 48, "flat surface");
+#endif  // TOOL_REFERENCE_FEATURE
     }
 #endif  // ALLOW_CONVEX_MEASUREMENTS
 
+    // Not in any of the above calibration screens: show regular UI
     else {
       if (button.clicked()) {
         aperture_choice += 1;

@@ -25,19 +25,22 @@
 # The diameter of the bearing balls we use as feet.
 #DEFINES+=-DSPHEROMETER_FEET_BALL_DIAMETER_MM=12.7
 
-# In case you always want to reference from a flat surface, you can disable
-# the tool reference feature to avoid accidentally enabling it. In particular
-# if you have a indicator that can keep an absolute position such as the
-# Mitutoyo, you might not want this and simplify the user interface.
+# This feature allows to reference not only from a flat surface but also
+# from the tool.
+# This is convenient if you don't have a reference flat surface but still
+# want to be able to get a reasonable measurement by simply using the
+# opposite shaped tool as reference.
 #
-# Also if we allow convex measurements, this feature will be switched of for
-# UI comlexity reasos.
-#DEFINES+=-DDISABLE_TOOL_REFERENCE_FEATURE
+# If you do have a flat surface and in particular if you have an indicator
+# that can keep the absolute position such as the Mitutoyo (thus remembers
+# when zeroed), you might not want this feature and simplify the user
+# interface.
+#DEFINES+=-DTOOL_REFERENCE_FEATURE=1
 
 # Allowing convex measurements means allowing for positive sag. This
 # means the UI can't warn about non-zeroed range anymore, but it is more
 # flexible.
-#DEFINES+=-DALLOW_CONVEX_MEASUREMENTS
+#DEFINES+=-DALLOW_CONVEX_MEASUREMENTS=1
 
 # Allow screen-saver to activate after this count of unchanged measurements.
 # This switches the display off, preserving power.

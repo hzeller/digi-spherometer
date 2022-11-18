@@ -23,7 +23,7 @@ command-line, see [Makefile](./Makefile). In particular after
 spherometer radius.
 
 ```bash
-make USER_DEFINES="-DDISPLAY_I2C=0x78 -DINDICATOR_DECIMALS=3 -DSPHEROMETER_RADIUS_MM=50.0" flash
+make USER_DEFINES="-DSPHEROMETER_RADIUS_MM=50.2 -DALLOW_CONVEX_MEASUREMENTS=1" flash
 ```
 
 The default compile works with the Autoutlet dial indicator. If you use a
@@ -37,11 +37,11 @@ DISP_SSD1306             | undefined     | Define if SSD1306 instead of SH1106 d
 DISPLAY_I2C              | 0x78          | I²C address of display.
 INDICATOR_DECIMALS       | 3             | Millimeter decimals supported. 3 means: resolution 1μm
 INDICATOR_MITUTOYO       | undefined     | Read Mitutoyo instead of Autolet indicator
-SPHEROMETER_RADIUS_MM    | 50.000        | Radius of spherometer ring.
+SPHEROMETER_RADIUS_MM    | 50.000        | Radius of spherometer ring, distance of balls to center.
 SPHEROMETER_RADIUS_ERROR_MM | 0.1        | Accuracy of the spherometer radius. Influences error calculation
 SPHEROMETER_FEET_BALL_DIAMETER_MM | 12.7 | Diameter of 'feet'-balls used for the ball correction.
-DISABLE_TOOL_REFERENCE_FEATURE | undefined | If defined: Disable tool reference feature (simpler UI)
-ALLOW_CONVEX_MEASUREMENTS| undefined     | Allow to measure also convex surfaces (shows radius negative and applies appropriate ball correction). This implies DISABLE_TOOL_REFERENCE_FEATURE (to simplify UI).
+TOOL_REFERENCE_FEATURE | undefined | If set to 1: Provide tool reference feature.
+ALLOW_CONVEX_MEASUREMENTS| undefined     | If set to 1: Allow to measure also convex surfaces (shows radius negative and applies appropriate ball correction).
 SCREENSAVER_SAMPLE_COUNT | undefined     | A number. If defined, turn off display after this number of samples with no change in measurement (good value would be around 1000). Use this for indicators such as Mitotoyo that don't auto-power off somewhat quickly. Reduces current consumption from ~15mA to ~4mA.
 
 #### Mirror size choices for ƒ/N calculation

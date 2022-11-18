@@ -84,7 +84,7 @@ when the drop-indicator is switched off and goes to sleep.
 [attiny85]: https://www.microchip.com/wwwproducts/en/ATtiny85
 [ssd1306]: https://www.ebay.com/sch/i.html?_nkw=ssd1306+i2c+128x64
 [sh1106]: https://www.ebay.com/sch/i.html?_nkw=sh1106+i2c+128x64
-[Mitutoyo 543]: https://ecatalog.mitutoyo.com/ABSOLUTE-Digimatic-Indicator-ID-S-Series-543-with-Simple-Design-C1196.aspx
+[Mitutoyo 543]: https://www.mitutoyo.com/products/small-tool-instruments-and-data-management/indicators/digimatic-indicators/absolute-digimatic-indicator-id-s/
 [autoutlet-indicator]: https://www.amazon.com/gp/product/B07C63VFN3
 [avr-gcc]: https://gcc.gnu.org/wiki/avr-gcc
 [firmware]: ./firmware/README.md
