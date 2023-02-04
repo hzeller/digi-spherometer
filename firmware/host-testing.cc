@@ -93,10 +93,10 @@ int main(int argc, char *argv[]) {
     const DialData dial_value = parse_value(argv[i]);
     const ErrorFloat radius = spherometer::calc_r(dial_value, false);
     const char *unit = dial_value.is_imperial ? "in" : "mm";
-    const char *sign = dial_value.negative ? "-" : " ";
-    printf("%s", sign);
+    printf("%s", dial_value.negative ? "-" : " ");
     PrintErrorFloat(dial_value.value, unit, " => ");
-    printf("%s", sign);
-    PrintErrorFloat(radius, unit, "radius\n");
+    PrintErrorFloat(radius, unit,
+                    dial_value.negative ? "concave radius\n"
+                                        : "convex radius\n");
   }
 }

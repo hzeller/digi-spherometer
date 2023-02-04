@@ -116,9 +116,9 @@ Leg radius        :   50.000mm (-0.100mm/+0.100mm)
 Assumed Dial error:    0.003mm
 
 == Measurements ==
-    0.700mm (-0.003mm/+0.003mm)  =>  1779.714mm (-14.73mm/+14.87mm) radius
--   0.500mm (-0.003mm/+0.003mm)  => -2506.600mm (-24.84mm/+25.16mm) radius
-    0.020in (-0.0001in/+0.0001in)  =>    96.635in (-0.954in/+0.966in) radius
+    0.700mm (-0.003mm/+0.003mm)  => 1779.714mm (-14.73mm/+14.87mm) convex radius
+-   0.500mm (-0.003mm/+0.003mm)  => 2506.600mm (-24.84mm/+25.16mm) concave radius
+    0.020in (-0.0001in/+0.0001in)  =>   96.635in (-0.954in/+0.966in) convex radius
 ```
 
 ![](../img/spherometer-devel.jpg)
