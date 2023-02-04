@@ -81,13 +81,13 @@ static int usage(const char *progname) {
 // Little program to test calculations manually on the development
 // machine.
 int main(int argc, char *argv[]) {
-  if (argc <= 1) return usage(argv[0]);
   printf("== Spherometer constants ==\n");
   printf("Ball radius       : %8.3fmm\n", spherometer::ball_r_mm);
   printf("Leg radius        : ");
   PrintErrorFloat(spherometer::leg_d_mm, "mm", "\n");
   printf("Assumed Dial error: %8.3fmm\n\n", kSimulatedDialErrorMM);
 
+  if (argc <= 1) return usage(argv[0]);
   printf("== Measurements ==\n");
   for (int i = 1; i < argc; ++i) {
     const DialData dial_value = parse_value(argv[i]);

@@ -101,7 +101,7 @@ main.hex: main.elf
 main.cc : font-bignumber.c font-smalltext.c font-tinytext.c
 
 # Little utility to print values on the host.
-host-testing: host-testing.cc
+host-testing: host-testing.cc compiler-flags
 	g++ -W -Wall -Wextra $(DEFINES) $< -o $@
 
 # This requires http://github.com/hzeller/bdfont.data to be installed
