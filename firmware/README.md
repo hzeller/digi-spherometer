@@ -99,6 +99,28 @@ The spherometer wakes up by registering a level interrupt on the indicator
 clock line: as soon as it sees activity there, it comes out of sleep and
 shows the relevant values.
 
+#### Testing
+After building with all the configurable parameters, there is also a program
+called `host-testing` available, with all these parameters built-in for
+testing on the local machine. This allows checking results without first
+flashing to the microcontroller.
+
+It takes any number of measurement values on the command line and outputs
+the calculated:
+
+```bash
+./host-testing 0.7mm -0.5mm 0.02in
+== Spherometer constants ==
+Ball radius       :    6.350mm
+Leg radius        :   50.000mm (-0.100mm/+0.100mm)
+Assumed Dial error:    0.003mm
+
+== Measurements ==
+    0.700mm (-0.003mm/+0.003mm)  =>  1779.714mm (-14.73mm/+14.87mm) radius
+-   0.500mm (-0.003mm/+0.003mm)  => -2506.600mm (-24.84mm/+25.16mm) radius
+    0.020in (-0.0001in/+0.0001in)  =>    96.635in (-0.954in/+0.966in) radius
+```
+
 ![](../img/spherometer-devel.jpg)
 
 [attiny85]: https://www.microchip.com/wwwproducts/en/ATtiny85

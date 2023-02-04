@@ -11,5 +11,6 @@ fp-info-cache
 spherometer-display-backups
 frame-generated-*
 compiler-flags
+host-testing
 .direnv
 .envrc

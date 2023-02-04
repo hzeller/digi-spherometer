@@ -35,6 +35,9 @@
 #include "font-smalltext.h"
 #include "font-tinytext.h"
 
+#include "dial-data.h"
+#include "spherometer-calculation.h"
+
 // ------------------------------ configurable parameters ------------
 /*
  * Choices of mirror diameters to be cylced through. In every workshop, there
@@ -57,60 +60,19 @@ static constexpr struct {
   { "  ⌀16\"", 16*25.4 },
 };
 
-// Distance center to feet. Radius of the Spherometer-feet circle.
-#ifndef SPHEROMETER_RADIUS_MM
-#  define SPHEROMETER_RADIUS_MM 50
-#endif
-#ifndef SPHEROMETER_RADIUS_ERROR_MM
-#  define SPHEROMETER_RADIUS_ERROR_MM 0.1
-#endif
-static constexpr ErrorFloat leg_d_mm(SPHEROMETER_RADIUS_MM,
-                                     SPHEROMETER_RADIUS_ERROR_MM);
-
-#ifndef SPHEROMETER_FEET_BALL_DIAMETER_MM
-#  define SPHEROMETER_FEET_BALL_DIAMETER_MM 12.7
-#endif
-// Radius of the bearing balls we're standing on.
-static constexpr float ball_r_mm = SPHEROMETER_FEET_BALL_DIAMETER_MM / 2;
+static constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
 
 // Pins the dial indicator is connected to.
 static constexpr uint8_t CLK_BIT  = (1<<3);
 static constexpr uint8_t DATA_BIT = (1<<4);
 
-static constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
-
-// ------------------------------ nothing to be changed below --------
-// ... derived from the above; let's compile-time calculate them.
-static constexpr ErrorFloat leg_d_inch = leg_d_mm / 25.4f;
-static constexpr ErrorFloat ball_r_inch = ball_r_mm / 25.4f;
-static constexpr ErrorFloat leg_d_mm_squared = leg_d_mm * leg_d_mm;
-static constexpr ErrorFloat leg_d_inch_squared = leg_d_inch * leg_d_inch;
-
-// Data coming back from the dial indicator. The dial indicator knows
-// its internal format and returns values as Millimeter or Inch.
-// This is filled by the dial-indicator-specific implementation of
-// ReadDialIndicator() (in dial-indicator-*.h)
-struct DialData {
-  DialData() : value(0), negative(false), is_imperial(false), raw_count(0) {}
-  ErrorFloat value;   // Absolute value in mm or inches.
-  bool negative;      // true if the value is negative.
-  bool is_imperial;   // Reading is in imperial units
-  int32_t raw_count;  // the internal raw value.
-
-  bool operator == (const DialData other) const {
-    return raw_count == other.raw_count && negative == other.negative
-      && is_imperial == other.is_imperial;
-  }
-  bool operator != (const DialData other) const {
-    return !(*this == other);
-  }
-};
-
-// The dial indicator header needs to provide this function.
-// Given the clk_bit and data_bit to read from PINB, read the data and write
-// the result to "data".
-// Return 'true' if successful, 'false' if indicator is not sending data (i.e.
-// is switched off).
+// Read dial indicator and set "data" to new value.
+//
+// The dial indicator header needs to provide this function reading from
+// the CLK_BIT and DATA_BIT to read from PINB.
+//
+// Return 'true' if successful, 'false' if indicator is not sending
+// data (i.e. is switched off).
 static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
                                      DialData *data);
 
@@ -121,51 +83,6 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 #  include "dial-indicator-autoutlet.h"
 #endif
 
-// Returns the absolute value of the sphere radius.
-static ErrorFloat calc_r(DialData dial, bool
-#if TOOL_REFERENCE_FEATURE
-                         tool_referenced
-#endif
-                         ){
-  ErrorFloat sag = dial.value;
-
-#if TOOL_REFERENCE_FEATURE
-  // For tool-referenced mode, we have to deal with roughly half
-  // the sag being contributed by the concave shape of the mirror and
-  // half by the convex shape of the tool. It is not exactly half, as
-  // the spherometer stands on balls, and positive ball correction is
-  // needed for the concave mirror and negative ball correction is for
-  // the convex tool.
-  //
-  // So if we calculate it correctly, the resulting formula would be
-  // 'slightly' longer than the standard spherometer formula
-  // (b being the ball radius, d leg radius):
-  // R = b+(((sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(-(4*s*b-2*d^2-s^2)/6-(4*b-3*s)^2/36)/(sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(4*b-3*s)/6)^(2)+d^2)/(2*((sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(-(4*s*b-2*d^2-s^2)/6-(4*b-3*s)^2/36)/(sqrt(-s^6-(-12*d^2-32*b^2)*s^4-(48*d^4-320*b^2*d^2+256*b^4)*s^2+64*d^6-64*b^2*d^4)/(8*3^(3/2))+((3*(s*d^2))/2-((4*b-3*s)*(4*s*b-2*d^2-s^2))/4)/6-(4*b-3*s)^3/216)^(1/3)-(4*b-3*s)/6))
-  // .. however, this mostly boils down to evening out
-  // positive and negative of the ball leg sizes, the rest
-  // of the terms contribute little.
-  // So, the tool referenced mode is very closely approximated by
-  // simply calculating the spherometer without ball correction and
-  // we're accurate well within very small margins (better than 0.1mm for
-  // the radius).
-  if (tool_referenced) sag = sag / 2;
-#endif
-
-  // Minimize calculations: use compile-time precalc half squared leg distance.
-  const ErrorFloat saghalf = sag / 2;
-  const ErrorFloat result = (dial.is_imperial
-                             ? saghalf + (leg_d_inch_squared/2) / sag
-                             : saghalf + (leg_d_mm_squared/2) / sag);
-
-#if TOOL_REFERENCE_FEATURE
-  if (tool_referenced)
-    return result;   // No correction needed (see above)
-#endif
-
-  // Correct depending on negative sag (=concave) or positive sag (=convex)
-  const ErrorFloat ball_correct = (dial.is_imperial ? ball_r_inch : ball_r_mm);
-  return dial.negative ? result + ball_correct : result - ball_correct;
-}
 
 // Get microcontroller to deep sleep. We enable a level changing interrupt
 // to come back online. We are listening on the clock line of the dial
@@ -254,7 +171,7 @@ public:
 static void ShowRadiusPage(SH1106Display *disp, DialData dial,
                            uint8_t dia_choice,
                            bool tool_referenced) {
-  const ErrorFloat error_radius = calc_r(dial, tool_referenced);
+  const ErrorFloat error_radius = spherometer::calc_r(dial, tool_referenced);
   const float radius = error_radius.nominal;
   // Calculating the sag values to radius in their respective units.
   // We round the returned value to an integer, which is the type

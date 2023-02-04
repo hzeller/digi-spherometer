@@ -86,7 +86,7 @@ OBJECTS=main.o sh1106-display.o  strfmt.o \
 	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o \
         $(I2C_IMPL)
 
-all : main.hex
+all : main.hex host-testing
 
 main.elf: $(OBJECTS)
 	$(LINK) -o $@ $(OBJECTS)
@@ -100,6 +100,10 @@ main.hex: main.elf
 
 main.cc : font-bignumber.c font-smalltext.c font-tinytext.c
 
+# Little utility to print values on the host.
+host-testing: host-testing.cc
+	g++ -W -Wall -Wextra $(DEFINES) $< -o $@
+
 # This requires http://github.com/hzeller/bdfont.data to be installed
 # For distribution, we don't depend on %.chars, so that a git cloned project
 # does not need bdfont-data-gen installed and compiles with provided files.
@@ -110,7 +114,7 @@ flash: main.hex
 	$(FLASH_CMD)
 
 clean:
-	rm -f $(OBJECTS) main.elf main.hex
+	rm -f $(OBJECTS) main.elf main.hex host-testing
 
 # Set to 8Mhz RC on Attiny85
 fuse:
