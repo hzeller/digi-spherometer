@@ -85,7 +85,8 @@ int main(int argc, char *argv[]) {
   printf("Ball radius       : %8.3fmm\n", spherometer::ball_r_mm);
   printf("Leg radius        : ");
   PrintErrorFloat(spherometer::leg_d_mm, "mm", "\n");
-  printf("Assumed Dial error: %8.3fmm\n\n", kSimulatedDialErrorMM);
+  printf("Assumed Dial error: %8.3fmm\n", kSimulatedDialErrorMM);
+  printf("Assuming concave mirrors result in negative value readings.\n\n");
 
   if (argc <= 1) return usage(argv[0]);
   printf("== Measurements ==\n");

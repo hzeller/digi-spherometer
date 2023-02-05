@@ -114,6 +114,7 @@ the calculated:
 Ball radius       :    6.350mm
 Leg radius        :   50.000mm (-0.100mm/+0.100mm)
 Assumed Dial error:    0.003mm
+Assuming concave mirrors result in negative value readings.
 
 == Measurements ==
     0.700mm (-0.003mm/+0.003mm)  => 1779.714mm (-14.73mm/+14.87mm) convex radius
