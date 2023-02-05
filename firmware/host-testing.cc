@@ -15,6 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/*
+ * Little program to test calculations manually on the development
+ * machine.
+ */
+
 #include "spherometer-calculation.h"
 
 #include <math.h>
@@ -22,13 +27,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <string>
-
+// The measurement error from the datahseet of the dial indicator.
 static constexpr float kSimulatedDialErrorMM = 0.003;
 
-static DialData parse_value(const char *val) {
+// Pretend to be a dial indicator, just reading the value from the string
+// and emitting DialData as it was coming from the indicator.
+static DialData ParseDialData(const char *val) {
   DialData result{};
   result.is_imperial = false;
+
   char *end = nullptr;
   const float parsed = strtof(val, &end);
   if (end) {
@@ -42,7 +49,7 @@ static DialData parse_value(const char *val) {
     }
   }
 
-  result.negative = (parsed < 0);
+  result.negative = (parsed < 0);  // Dial indicator reports sign separately
 
   // Simulate error coming from dial indicator.
   if (result.is_imperial) {
@@ -50,6 +57,7 @@ static DialData parse_value(const char *val) {
   } else {
     result.value = { fabs(parsed), kSimulatedDialErrorMM };
   }
+  result.value.force_positive();  // Clamp error margings to not go negative.
 
   return result;
 }
@@ -78,8 +86,6 @@ static int usage(const char *progname) {
   return 1;
 }
 
-// Little program to test calculations manually on the development
-// machine.
 int main(int argc, char *argv[]) {
   printf("== Spherometer constants ==\n");
   printf("Ball radius       : %8.3fmm\n", spherometer::ball_r_mm);
@@ -91,7 +97,7 @@ int main(int argc, char *argv[]) {
   if (argc <= 1) return usage(argv[0]);
   printf("== Measurements ==\n");
   for (int i = 1; i < argc; ++i) {
-    const DialData dial_value = parse_value(argv[i]);
+    const DialData dial_value = ParseDialData(argv[i]);
     const ErrorFloat radius = spherometer::calc_r(dial_value, false);
     const char *unit = dial_value.is_imperial ? "in" : "mm";
     printf("%s", dial_value.negative ? "-" : " ");

@@ -20,6 +20,11 @@
 #include "error-float.h"
 #include "dial-data.h"
 
+/*
+ * in a separate file so that we can use it in the firmware as well as
+ * compiling it on the host for the host-testing binary.
+ */
+
 namespace spherometer {
 // Distance center to feet. Radius of the Spherometer-feet circle.
 #ifndef SPHEROMETER_RADIUS_MM
