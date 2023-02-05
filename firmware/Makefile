@@ -100,6 +100,12 @@ main.hex: main.elf
 
 main.cc : font-bignumber.c font-smalltext.c font-tinytext.c
 
+main.o: spherometer-calculation.h error-float.h dial-data.h
+host-testing: spherometer-calculation.h error-float.h dial-data.h
+
+i2c-master-usi.o: i2c-master.h
+i2c-master-twi.o: i2c-master.h
+
 # Little utility to print values on the host.
 host-testing: host-testing.cc compiler-flags
 	g++ -W -Wall -Wextra $(DEFINES) $< -o $@
@@ -124,10 +130,10 @@ fuse:
 compiler-flags: FORCE
 	@echo '$(CXX) $(CXXFLAGS)' | cmp -s - $@ || echo '$(CXX) $(CXXFLAGS)' > $@
 
-%.o : %.c compiler-flags
+%.o : %.c %.h compiler-flags
 	$(CC) $(TARGET_ARCH) $(CFLAGS) -c -o $@ $<
 
-%.o : %.cc compiler-flags
+%.o : %.cc %.h compiler-flags
 	$(CXX) $(TARGET_ARCH) $(CXXFLAGS) -c -o $@ $<
 
 .PHONY: FORCE
