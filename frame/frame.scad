@@ -41,7 +41,7 @@ leg_plate_thick=12.7;    // Thickness of the acrylic used.
 leg_ball_dia=12.7;
 leg_ball_hole_dia=8;
 leg_plate_rim=7;         // Extra acrylic beyond the legs.
-leg_plate_radius=leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
+leg_plate_radius=127/2; //leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
 dial_cable_thick=1.5;   // Thickness of the data cables.
@@ -69,14 +69,15 @@ aa_dist = 8;      // Distance between batteries
 // Battery box wiggle printing on the back is a challenge. Maybe this needs to
 // be split in the wiggle part and flat battery box back, that are then glued
 // together.
-battery_box_with_wiggle=false;   // Easier to print if false :)
+battery_box_with_wiggle=true;   // Easier to print if false :)
 battery_box_rim_deep=1.5;       // Alignment rim all around battery box.
+battery_center_tap = false;     // Add channel for 1.5V center tap
 
 base_dia=dial_stem_pos*2;
 
 display_wall_thick=1.5;
 display_top_wall=0.8;    // Front face a little thinner to have display close.
-display_wide=52;         // Mostly determined by electronics size and screws.
+display_wide=52-0;         // Mostly determined by electronics size and screws.
 display_high=36;
 display_box_thick=7.5;   // Large enough to house electronics.
 display_transition=7;    // Transition blend between dial and display box.
@@ -309,14 +310,16 @@ module battery_box_punch() {
     translate([-(aa_dist/2+aa_dia), 0, aa_wall+lug_thick/2]) cube([5, lug_wide, lug_thick], center=true);
 
     // Cable for 1.5V tap.
-    translate([-(aa_dist+aa_dia)/2, 0, 0]) rotate([0, 0, -45]) translate([aa_dia/2, 0, aa_wall]) cylinder(r=dial_cable_thick/2, h=aa_len);
+    if (battery_center_tap) {
+      translate([-(aa_dist+aa_dia)/2, 0, 0]) rotate([0, 0, -45]) translate([aa_dia/2, 0, aa_wall]) cylinder(r=dial_cable_thick/2, h=aa_len);
+    }
     empty_space_fraction=0.0;
     translate([-(aa_dia+aa_dist)/2, -aa_dia/2, aa_wall])
       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
     translate([-(aa_dia+aa_dist)/2, -aa_dia/2, height-aa_wall-empty_space_fraction*height])
       cube([aa_dia+aa_dist, aa_dia, empty_space_fraction*height]);
 
-    translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(len=aa_dia+1*aa_wall-m3_head_len, nut_at=5, nut_thick=40);
+    translate([0, aa_dia/2+aa_wall-m3_head_len, height/2]) rotate([90, 0, 0]) m3_screw(len=aa_dia+1*aa_wall-m3_head_len, nut_at=10, nut_thick=40);
   }
 }
 
@@ -552,7 +555,7 @@ module display_base_block() {
     translate([-display_wide/2, start_y - display_high, 0]) champfer_point_cloud();
     translate([display_wide/2, start_y - display_high, 0]) scale([-1, 1, 1]) champfer_point_cloud();
     intersection() {  // Make front align smoothly with round bottom plate
-      cylinder(r=leg_plate_radius+display_front_radius_adjust, h=e);
+      translate([0, mit_front - mit_front_adjust, 0]) cylinder(r=leg_plate_radius+display_front_radius_adjust, h=e);
       translate([-display_wide/2, -100-base_dia/2, 0]) cube([display_wide, 100, 1]);
     }
   }
@@ -564,9 +567,20 @@ module display_base_block() {
 
   // Retaining blocks to be matched up with the holes for the M3 nuts of the
   // device.
-  nut_wide=m3_nut_dia * cos(30) - 2*fit_tolerance;
-  for (offset = [-bottom_mount_front_distance/2, bottom_mount_front_distance/2]) {
-    translate([-nut_wide/2 + offset, -base_dia/2-e, stem_high+fit_tolerance]) cube([nut_wide, 3, m3_nut_thick-2*fit_tolerance]);
+  if (false) {
+    nut_wide=m3_nut_dia * cos(30) - 2*fit_tolerance;
+    for (offset = [-bottom_mount_front_distance/2, bottom_mount_front_distance/2]) {
+      translate([-nut_wide/2 + offset, -base_dia/2-e, stem_high+fit_tolerance]) cube([nut_wide, 3, m3_nut_thick-2*fit_tolerance]);
+    }
+  }
+}
+
+module rounded_corner_box(coords=[10,10,10], r=1) {
+  hull() {
+    translate([0+r, 0+r, 0]) cylinder(r=r, h=coords[2]);
+    translate([coords[0]-r, 0+r, 0]) cylinder(r=r, h=coords[2]);
+    translate([coords[0]-r, coords[1]-r, 0]) cylinder(r=r, h=coords[2]);
+    translate([0+r, coords[1]-r, 0]) cylinder(r=r, h=coords[2]);
   }
 }
 
@@ -578,7 +592,7 @@ module display_electronics_punch() {
   h=33.4+2*extra;
   knob_long=0.5;
   knob_poke_wide=2.5;
-  knob_poke_high=3;
+  knob_poke_high=6;   // Height of the button hitting the pcb switch.
   knob_from_top=display_button_from_top;
   translate([-w/2, -h, -display_box_thick+e]) difference() {
     union() {
@@ -589,9 +603,9 @@ module display_electronics_punch() {
   }
 
   // Display
-  dw=32;
-  dh=17.5;
-  translate([0, -dh/2-6.5, 5-e]) color("blue") cube([dw, dh, 10], center=true);
+  dw=31;
+  dh=16.5;
+  translate([-dw/2, -dh-6.5, -e]) color("blue") rounded_corner_box([dw, dh, 10], r=2);
 
   // old switch
   if (false) translate([w/2-e, -h+6, -10]) {
@@ -609,7 +623,9 @@ module display_case_punch() {
   translate([0, -base_dia/2 - local_offset, display_box_thick-display_top_wall]) display_electronics_punch();
 
   // Screw at the very front to hold down display.
-  translate([0, -bottom_mount_front_display_center_offset, 0]) rotate([0, 0, 150]) m3_screw(len=display_box_thick-3, nut_at=1, nut_channel=10);
+  if (false) {
+    translate([0, -bottom_mount_front_display_center_offset, 0]) rotate([0, 0, 150]) m3_screw(len=display_box_thick-3, nut_at=1, nut_channel=10);
+  }
 }
 
 module display_cable_channel_punch(at_x, wide) {
@@ -622,14 +638,17 @@ module display_cable_channel_punch(at_x, wide) {
 module display_case() {
   difference() {
     union() {
-      display_transition_block();  // From round to square
+      if (false) display_transition_block();  // From round to square
       display_base_block();        // Rest of the box.
     }
     display_case_punch();
-    // Channels for the cable
-    w = cable_channel_front_wide;
-    display_cable_channel_punch(cable_channel_distance+w/2, w);
-    display_cable_channel_punch(-cable_channel_distance-w/2, w);
+
+    if (false) {
+      // Channels for the cable
+      w = cable_channel_front_wide;
+      display_cable_channel_punch(cable_channel_distance+w/2, w);
+      display_cable_channel_punch(-cable_channel_distance-w/2, w);
+    }
   }
 }
 
@@ -738,8 +757,8 @@ module display_button_separator(extra=0, actuation=0) {
   }
 }
 
-// Assemble to see how that looks.
-if (true) {
+// Assemble of the autolet to see how that looks.
+module assembly_autolet() {
   demo_leg_plate();
   color("red") render() spherometer_frame_stem_squeeze_block();
   color("yellow") render() spherometer_frame_main_block();
@@ -749,3 +768,176 @@ if (true) {
     color("yellow") render() display_case_button();
   }
 }
+
+module mit_backend() {
+  color("yellow") render() difference() {
+    battery_box();
+    battery_box_separator(is_inside=false);
+  }
+}
+
+
+module mit_battery_cover() {
+  color("blue")
+    render() intersection() {
+    battery_box(with_wiggle=battery_box_with_wiggle);
+    battery_box_separator(is_inside=true);
+  }
+}
+
+mit_back=7.5 - 1.0;
+mit_front=22;
+mit_front_adjust=18.4;
+mit_dia=18.25;
+mit_bottom_dia=23;
+mit_wide=display_wide;
+mit_conn_bar_thick=14;
+
+module mit_center_block(h=mit_conn_bar_thick) {
+  back_wide = 44.2;  // about battery box
+  hull() {
+    translate([-mit_wide/2, -mit_front, 0]) cube([mit_wide, mit_front, h]);
+    translate([-back_wide/2, 0, 0]) cube([back_wide, mit_back, h]);
+  }
+}
+
+module mit_center_punch(h=mit_conn_bar_thick) {
+  translate([0, 0, -e]) cylinder(r=mit_dia/2, h=max(15, h+2*e));
+  scale([0.8, 1.2, 1]) translate([0, 0, -e]) cylinder(r=mit_dia/2, h=max(14, h+2*e));
+  translate([0, 0, -e]) cylinder(r=mit_bottom_dia/2, h=4);
+  translate([0, 0, -e]) cylinder(r1=26/2, r2=mit_bottom_dia/2, h=2);  // accomodate glue ridge.
+  translate([0, 0, 9]) rotate([-90, 0, 0]) cylinder(r=4/2, h=35);  // Grub screw access
+}
+
+module mit_power_punch() {
+  front = mit_front;
+  back = mit_back+8;
+  wide = 3;
+  high = 3.5;
+  translate([-mit_wide/2+8, 0, 0]) {
+    hull() {
+      translate([0, -front+6, -e]) cylinder(r=wide/2, h=high);
+      translate([0, back, -e]) cylinder(r=wide/2, h=high);
+    }
+    hull() {
+      translate([0, -front+6, -e]) cylinder(r=wide/2, h=high);
+      translate([3, -front-3, -e]) cylinder(r=wide, h=high);
+    }
+  }
+  //translate([-mit_wide/2 + 2, -front, -e]) cube([3, front+back, 4]);
+}
+
+module mit_display_wedge(extra_front_len=0) {
+  hull() {
+    translate([-display_wide/2, -mit_front+1 - extra_front_len, 0]) cube([display_wide, 0.1+extra_front_len, display_box_thick]);
+    translate([0, 0, 1]) cube([mit_wide, 1, 2], center=true);
+  }
+}
+
+module mit_display_data_cable_punch() {
+  hull() {
+    translate([18, -mit_front, 2.5]) sphere(r=2.5);
+    translate([mit_wide/2+2, -mit_front+15, 12]) sphere(r=2.2);
+  }
+}
+
+module mit_battery_cable_punch() {
+  w=mit_wide+2*e;
+  translate([0, mit_back-0.5, mit_conn_bar_thick+2]) rotate([0, 90, 0]) translate([0, 0, -w/2]) cylinder(r=4.5/2, h=w);
+}
+
+module mit_frame() {
+  difference() {
+    union() {
+      translate([0, mit_back, 0]) mit_backend();  // battery box, essentially.
+
+      mit_center_block();
+
+      translate([0, -mit_front+mit_front_adjust, 0]) display_part();
+      mit_display_wedge();
+    }
+    mit_center_punch();
+    mit_power_punch();  // power cable channel
+    mit_display_data_cable_punch();  // cable going into display
+    mit_battery_cable_punch();
+
+    // Screws
+    translate([-(mit_dia/2 + 4), -mit_front+3.3, mit_conn_bar_thick-3.2]) rotate([90, 0, 180]) m3_screw(len=27.5, nut_at=21, nut_channel=15);
+    translate([+(mit_dia/2 + 4), -mit_front+3.3, mit_conn_bar_thick-3.2]) rotate([90, 0, 180]) m3_screw(len=27.5, nut_at=21, nut_channel=15);
+
+    //translate([0, -leg_plate_radius+6, 0]) cylinder(r=4/2, h=3);  // front display down screw
+
+    translate([-display_wide/2 + 4, -mit_front-25, 0]) #cylinder(r=4/2, h=5);
+    translate([display_wide/2 - 4, -mit_front-25, 0]) #cylinder(r=4/2, h=5);
+  }
+}
+
+module mit_front_back_separator(is_front=true) {
+  separation_offset=0.4 / 2;
+  translate([-50, -100-(is_front ? 1 : -1) * separation_offset, -10]) cube([100, 100, 100]);
+}
+
+module mit_front_part() {
+  intersection() {
+    mit_frame();
+    mit_front_back_separator(is_front=true);
+  }
+}
+
+module mit_back_part() {
+  difference() {
+    mit_frame();
+    mit_front_back_separator(is_front=false);
+  }
+}
+
+module mit_puzzle_wedge(h=display_box_thick, extra=0, big_r=4) {
+  hull() {
+    cylinder(r=big_r+extra, h=h);
+    translate([0, -10, 0]) cylinder(r=0.2+extra, h=h);
+  }
+}
+
+module mit_bar_display_separator(enlarge=false) {
+  w = display_wide + 2*e;
+  h = display_box_thick+3*e;
+  enlarge_value = enlarge ? 0.1 : 0;
+  translate([-w/2, -80 - mit_front+1+1 + enlarge_value, -e]) cube([w, 80, h+enlarge_value]);
+
+  translate([-23, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value, big_r=2);
+  translate([-12, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value);
+  translate([+12, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value);
+  //translate([+23, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value, big_r=2);
+}
+
+module mit_front_display_part() {
+  intersection() {
+    mit_front_part();
+    mit_bar_display_separator(enlarge=false);
+  }
+}
+
+module mit_front_block_part() {
+  difference() {
+    mit_front_part();
+    mit_bar_display_separator(enlarge=true);
+  }
+}
+
+//mit_frame();
+//display_base_block();
+//display_case();
+//translate([0, 15, 0]) mit_battery_cover();
+if (true) {
+color("yellow") mit_back_part();
+translate([0, -mit_front+mit_front_adjust, 0])  color("yellow") render() display_case_button();
+color("gray") render() mit_front_display_part();
+color("red") render() mit_front_block_part();
+color("azure", 0.2) translate([0, 0, -2-e]) cylinder(r=leg_plate_radius, h=2);
+}
+
+//display_case_button();
+//display_case();
+//display_electronics_punch();
+
+//assembly_autolet();
