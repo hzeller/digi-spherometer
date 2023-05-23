@@ -242,8 +242,8 @@ module dial_holder_punch(cable_slot=true) {
 // Punching space for direction battery pictogram and +/- designations.
 module aa_pictogram_punch(h=3) {
   translate([0, 0, -h+0.5]) color("red") {
-    translate([0, -aa_len*0.25-8, 0]) linear_extrude(height=h) text("–", halign="center");
-    translate([0, aa_len*0.25, 0]) linear_extrude(height=h) text("+", halign="center");
+    translate([0, -aa_len*0.20-8, 0]) linear_extrude(height=h) text("–", halign="center");
+    translate([0, aa_len*0.20, 0]) linear_extrude(height=h) text("+", halign="center");
     translate([0, 0, h/2]) difference() {
       union() {
         cube([6, 20, h], center=true);
@@ -773,6 +773,7 @@ module mit_backend() {
   color("yellow") render() difference() {
     battery_box();
     battery_box_separator(is_inside=false);
+    translate([0, 0.4, 48]) rotate([90, 0, 0]) version_punch(0.5);
   }
 }
 
@@ -788,15 +789,17 @@ module mit_battery_cover() {
 mit_back=7.5 - 1.0;
 mit_front=22;
 mit_front_adjust=18.4;
-mit_dia=18.25;
+mit_dia=20;
 mit_bottom_dia=23;
 mit_wide=display_wide;
 mit_conn_bar_thick=14;
 
 module mit_center_block(h=mit_conn_bar_thick) {
   back_wide = 44.2;  // about battery box
+  back_slant=h - display_box_thick;
   hull() {
-    translate([-mit_wide/2, -mit_front, 0]) cube([mit_wide, mit_front, h]);
+    translate([-mit_wide/2, -mit_front, 0]) cube([mit_wide, mit_front, display_box_thick]);
+    translate([-back_wide/2, -mit_front+back_slant, h]) cube([back_wide, mit_front, e]);
     translate([-back_wide/2, 0, 0]) cube([back_wide, mit_back, h]);
   }
 }
@@ -862,8 +865,8 @@ module mit_frame() {
     mit_battery_cable_punch();
 
     // Screws
-    translate([-(mit_dia/2 + 4), -mit_front+3.3, mit_conn_bar_thick-3.2]) rotate([90, 0, 180]) m3_screw(len=27.5, nut_at=21, nut_channel=15);
-    translate([+(mit_dia/2 + 4), -mit_front+3.3, mit_conn_bar_thick-3.2]) rotate([90, 0, 180]) m3_screw(len=27.5, nut_at=21, nut_channel=15);
+    translate([-(mit_dia/2 + 4), 5, mit_conn_bar_thick-5]) rotate([90, 0, 0]) m3_screw(len=23, nut_at=15, nut_channel=15);
+    translate([+(mit_dia/2 + 4), 5, mit_conn_bar_thick-5]) rotate([90, 0, 0]) m3_screw(len=23, nut_at=15, nut_channel=15);
 
     //translate([0, -leg_plate_radius+6, 0]) cylinder(r=4/2, h=3);  // front display down screw
 
@@ -929,13 +932,14 @@ module mit_front_block_part() {
 //display_case();
 //translate([0, 15, 0]) mit_battery_cover();
 if (true) {
-color("yellow") mit_back_part();
-translate([0, -mit_front+mit_front_adjust, 0])  color("yellow") render() display_case_button();
-color("gray") render() mit_front_display_part();
-color("red") render() mit_front_block_part();
-color("azure", 0.2) translate([0, 0, -2-e]) cylinder(r=leg_plate_radius, h=2);
+  color("yellow") mit_back_part();
+  translate([0, -mit_front+mit_front_adjust, 0])  color("yellow") render() display_case_button();
+  color("gray") render() mit_front_display_part();
+  color("red") render() mit_front_block_part();
+  color("azure", 0.2) translate([0, 0, -2-e]) cylinder(r=leg_plate_radius, h=2);
 }
 
+//mit_frame();
 //display_case_button();
 //display_case();
 //display_electronics_punch();

@@ -5,9 +5,17 @@ TARGETS=fab/spherometer_frame_main_block.stl \
 	fab/display_case_button.stl \
         fab/leg_plate_2d.dxf
 
+TARGETS_MITUOYO=fab/mit_back_part.stl \
+        fab/mit_front_display_part.stl \
+        fab/mit_front_block_part.stl \
+        fab/spherometer_frame_battery_lid.stl \
+	fab/display_case_button.stl
+
 
 GIT_HASH=$(shell git log --date=short --pretty=format:'%h' -n 1 frame.scad)
 GIT_DATE=$(shell git log --date=short --pretty=format:'%cd' -n 1 frame.scad)
+
+mitutoyo: $(TARGETS_MITUOYO)
 
 all: $(TARGETS)
 

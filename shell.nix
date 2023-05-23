@@ -14,5 +14,6 @@ pkgs.mkShell {
       pkgsCross.avr.buildPackages.gcc8
       avrdude
       openscad
+      prusa-slicer
     ];
 }
