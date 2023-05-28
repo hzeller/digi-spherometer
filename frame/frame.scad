@@ -41,7 +41,7 @@ leg_plate_thick=12.7;    // Thickness of the acrylic used.
 leg_ball_dia=12.7;
 leg_ball_hole_dia=8;
 leg_plate_rim=7;         // Extra acrylic beyond the legs.
-leg_plate_radius=127/2; //leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
+leg_plate_radius=119/2; //leg_radius + leg_ball_hole_dia/2 + leg_plate_rim;
 
 dial_dia=57.5;
 dial_cable_thick=1.5;   // Thickness of the data cables.
@@ -78,7 +78,7 @@ base_dia=dial_stem_pos*2;
 display_wall_thick=1.5;
 display_top_wall=0.8;    // Front face a little thinner to have display close.
 display_wide=52-0;         // Mostly determined by electronics size and screws.
-display_high=36;
+display_high=32;
 display_box_thick=7.5;   // Large enough to house electronics.
 display_transition=7;    // Transition blend between dial and display box.
 display_front_radius_adjust=-0.5;  // Don't go all the way to the edge of plate
@@ -104,8 +104,8 @@ bottom_mount_front_distance=front_width - 8;  // right/left distance.
 // Center screw in display-front.
 bottom_mount_front_display_center_offset=leg_plate_radius - 8;
 
-bottom_mount_back_offset=7;  // Bottom screws. Offset from center to back.
-bottom_mount_back_distance=display_wide - 13;  // right/left distance.
+bottom_mount_back_offset=5;  // Bottom screws. Offset from center to back.
+bottom_mount_back_distance=display_wide - 9;  // right/left distance.
 
 function max(a, b) = a > b ? a : b;
 
@@ -415,9 +415,11 @@ module bottom_screw_punch() {
   }
 
   // Front
+  if (false) {
   translate([0, -bottom_mount_front_offset, 0]) {
     translate([bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
     translate([-bottom_mount_front_distance/2, 0, 0]) m3_screw(len=screw_len, nut_at=stem_high, nut_channel=bottom_mount_front_offset);
+  }
   }
 
   // Hole through the squeeze block. Optional.
@@ -552,12 +554,17 @@ module display_base_block() {
 
   hull() {
     display_top_block();
-    translate([-display_wide/2, start_y - display_high, 0]) champfer_point_cloud();
-    translate([display_wide/2, start_y - display_high, 0]) scale([-1, 1, 1]) champfer_point_cloud();
+    //translate([-display_wide/2, start_y - display_high, 0]) champfer_point_cloud();
+    //translate([display_wide/2, start_y - display_high, 0]) scale([-1, 1, 1]) champfer_point_cloud();
     intersection() {  // Make front align smoothly with round bottom plate
       translate([0, mit_front - mit_front_adjust, 0]) cylinder(r=leg_plate_radius+display_front_radius_adjust, h=e);
       translate([-display_wide/2, -100-base_dia/2, 0]) cube([display_wide, 100, 1]);
     }
+    intersection() {  // Make front align smoothly with round bottom plate
+      translate([0, mit_front - mit_front_adjust, display_box_thick]) cylinder(r=leg_plate_radius+display_front_radius_adjust-4, h=e);
+      translate([-display_wide/2, -100-base_dia/2, 0]) cube([display_wide, 100, 50]);
+    }
+
   }
 
   // Little tactile extrusion to 'feel' the button.
@@ -779,15 +786,14 @@ module mit_backend() {
 
 
 module mit_battery_cover() {
-  color("blue")
-    render() intersection() {
+  color("blue") render() intersection() {
     battery_box(with_wiggle=battery_box_with_wiggle);
     battery_box_separator(is_inside=true);
   }
 }
 
 mit_back=7.5 - 1.0;
-mit_front=22;
+mit_front=18;
 mit_front_adjust=18.4;
 mit_dia=20;
 mit_bottom_dia=23;
@@ -796,11 +802,11 @@ mit_conn_bar_thick=14;
 
 module mit_center_block(h=mit_conn_bar_thick) {
   back_wide = 44.2;  // about battery box
-  back_slant=h - display_box_thick;
+  back_slant=h - 1.5*display_box_thick;
   hull() {
     translate([-mit_wide/2, -mit_front, 0]) cube([mit_wide, mit_front, display_box_thick]);
     translate([-back_wide/2, -mit_front+back_slant, h]) cube([back_wide, mit_front, e]);
-    translate([-back_wide/2, 0, 0]) cube([back_wide, mit_back, h]);
+   translate([-back_wide/2, 0, 0]) cube([back_wide, mit_back, h]);
   }
 }
 
@@ -809,7 +815,7 @@ module mit_center_punch(h=mit_conn_bar_thick) {
   scale([0.8, 1.2, 1]) translate([0, 0, -e]) cylinder(r=mit_dia/2, h=max(14, h+2*e));
   translate([0, 0, -e]) cylinder(r=mit_bottom_dia/2, h=4);
   translate([0, 0, -e]) cylinder(r1=26/2, r2=mit_bottom_dia/2, h=2);  // accomodate glue ridge.
-  translate([0, 0, 9]) rotate([-90, 0, 0]) cylinder(r=4/2, h=35);  // Grub screw access
+  translate([0, 0, 6.5]) rotate([-90, 0, 0]) cylinder(r=4/2, h=35);  // Grub screw access
 }
 
 module mit_power_punch() {
@@ -833,7 +839,7 @@ module mit_power_punch() {
 module mit_display_wedge(extra_front_len=0) {
   hull() {
     translate([-display_wide/2, -mit_front+1 - extra_front_len, 0]) cube([display_wide, 0.1+extra_front_len, display_box_thick]);
-    translate([0, 0, 1]) cube([mit_wide, 1, 2], center=true);
+    translate([0, 0, 1]) cube([mit_wide, e, 2], center=true);
   }
 }
 
@@ -852,7 +858,7 @@ module mit_battery_cable_punch() {
 module mit_frame() {
   difference() {
     union() {
-      translate([0, mit_back, 0]) mit_backend();  // battery box, essentially.
+      render() translate([0, mit_back-e, 0]) mit_backend();  // battery box, essentially.
 
       mit_center_block();
 
@@ -865,8 +871,8 @@ module mit_frame() {
     mit_battery_cable_punch();
 
     // Screws
-    translate([-(mit_dia/2 + 4), 5, mit_conn_bar_thick-5]) rotate([90, 0, 0]) m3_screw(len=23, nut_at=15, nut_channel=15);
-    translate([+(mit_dia/2 + 4), 5, mit_conn_bar_thick-5]) rotate([90, 0, 0]) m3_screw(len=23, nut_at=15, nut_channel=15);
+    translate([-(mit_dia/2 + 3), 5, mit_conn_bar_thick-4]) rotate([90, 0, 0]) m3_screw(len=20, nut_at=14, nut_channel=4);
+    translate([+(mit_dia/2 + 3), 5, mit_conn_bar_thick-4]) rotate([90, 0, 0]) m3_screw(len=20, nut_at=14, nut_channel=4);
 
     //translate([0, -leg_plate_radius+6, 0]) cylinder(r=4/2, h=3);  // front display down screw
 
@@ -908,8 +914,8 @@ module mit_bar_display_separator(enlarge=false) {
   translate([-w/2, -80 - mit_front+1+1 + enlarge_value, -e]) cube([w, 80, h+enlarge_value]);
 
   translate([-23, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value, big_r=2);
-  translate([-12, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value);
-  translate([+12, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value);
+  translate([-13, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value);
+  translate([+13, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value);
   //translate([+23, -mit_front+4+3, -e]) mit_puzzle_wedge(h=h, extra=enlarge_value, big_r=2);
 }
 
@@ -927,11 +933,8 @@ module mit_front_block_part() {
   }
 }
 
-//mit_frame();
-//display_base_block();
-//display_case();
-//translate([0, 15, 0]) mit_battery_cover();
 if (true) {
+  //translate([0, 15, 0]) mit_battery_cover();
   color("yellow") mit_back_part();
   translate([0, -mit_front+mit_front_adjust, 0])  color("yellow") render() display_case_button();
   color("gray") render() mit_front_display_part();
@@ -940,8 +943,9 @@ if (true) {
 }
 
 //mit_frame();
-//display_case_button();
+//display_part();
 //display_case();
-//display_electronics_punch();
-
-//assembly_autolet();
+//display_base_block();
+//mit_front_part();
+//mit_back_part();
+//mit_frame();

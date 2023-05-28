@@ -8,6 +8,7 @@ TARGETS=fab/spherometer_frame_main_block.stl \
 TARGETS_MITUOYO=fab/mit_back_part.stl \
         fab/mit_front_display_part.stl \
         fab/mit_front_block_part.stl \
+        fab/mit_battery_cover.stl \
         fab/spherometer_frame_battery_lid.stl \
 	fab/display_case_button.stl
 
