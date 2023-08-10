@@ -27,7 +27,6 @@ popt.SetScale(1)
 popt.SetMirror(False)
 popt.SetUseGerberAttributes(True)
 popt.SetUseGerberProtelExtensions(True)
-popt.SetExcludeEdgeLayer(True);
 popt.SetScale(1)
 popt.SetUseAuxOrigin(True)
 
@@ -73,11 +72,9 @@ pctl.ClosePlot()
 drlwriter = EXCELLON_WRITER( board )
 drlwriter.SetMapFileFormat( PLOT_FORMAT_PDF )
 
-mirror = False
-minimalHeader = False
-offset = wxPoint(0,0)
+offset = board.GetDesignSettings().GetAuxOrigin()
 mergeNPTH = True   # non-plated through-hole
-drlwriter.SetOptions( mirror, minimalHeader, offset, mergeNPTH )
+drlwriter.SetOptions( aMirror=False, aMinimalHeader=False, aOffset=offset, aMerge_PTH_NPTH=mergeNPTH )
 
 metricFmt = True
 drlwriter.SetFormat( metricFmt )
