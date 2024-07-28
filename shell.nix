@@ -7,12 +7,18 @@ pkgs.mkShell {
   buildInputs = with pkgs;
     [
       git
-      python3
+
+      # PCB
       kicad
+      python310
       python310Packages.kicad
       zip
+
+      # Firmware
       pkgsCross.avr.buildPackages.gcc8
       avrdude
-      openscad
+
+      # case
+      openscad-unstable
     ];
 }
