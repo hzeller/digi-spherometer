@@ -15,7 +15,7 @@ pkgs.mkShell {
       zip
 
       # Firmware
-      pkgsCross.avr.buildPackages.gcc8
+      pkgsCross.avr.buildPackages.gcc13
       avrdude
 
       # case
