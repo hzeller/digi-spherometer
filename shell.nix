@@ -20,5 +20,6 @@ pkgs.mkShell {
 
       # case
       openscad-unstable
+      prusa-slicer
     ];
 }
