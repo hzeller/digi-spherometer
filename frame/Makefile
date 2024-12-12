@@ -16,20 +16,23 @@ TARGETS_MITUOYO=fab/mit_back_part.stl \
 GIT_HASH=$(shell git log --date=short --pretty=format:'%h' -n 1 frame.scad)
 GIT_DATE=$(shell git log --date=short --pretty=format:'%cd' -n 1 frame.scad)
 
+OPENSCAD=openscad -q --backend Manifold  -D'$$fs=0.15' -D'$$fa=1'
+
 mitutoyo: $(TARGETS_MITUOYO)
 
 all: $(TARGETS)
 
 %.stl: %.scad
-	openscad -D'version_id="$(GIT_HASH)"' -D'version_date="$(GIT_DATE)"' \
-                 -D'print_quality=true' -o $@ $^
+	$(OPENSCAD) -D'version_id="$(GIT_HASH)"' \
+                    -D'version_date="$(GIT_DATE)"' \
+                    -D'print_quality=true' -o $@ $^
 
 %.dxf: %.scad
-	openscad -D'print_quality=true' -o $@ $^
+	$(OPENSCAD) -D'print_quality=true' -o $@ $^
 
 fab/%.scad : frame.scad
-	mkdir -p fab
+	@mkdir -p fab
 	echo "use <../frame.scad>; $*();" > $@
 
 clean:
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) $(TARGETS_MITUOYO)
