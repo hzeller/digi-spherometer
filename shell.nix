@@ -7,13 +7,19 @@ pkgs.mkShell {
   buildInputs = with pkgs;
     [
       git
-      python3
+
+      # PCB
       kicad
+      python310
       python310Packages.kicad
       zip
-      pkgsCross.avr.buildPackages.gcc8
+
+      # Firmware
+      pkgsCross.avr.buildPackages.gcc13
       avrdude
-      openscad
+
+      # case
+      openscad-unstable
       prusa-slicer
     ];
 }
