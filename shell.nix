@@ -10,8 +10,8 @@ pkgs.mkShell {
 
       # PCB
       kicad
-      python310
-      python310Packages.kicad
+      python3
+      python3Packages.kicad
       zip
 
       # Firmware
