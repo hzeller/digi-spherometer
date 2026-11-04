@@ -17,6 +17,10 @@
 #ifndef DIAL_INDICATOR_MITUTOYO_H
 #define DIAL_INDICATOR_MITUTOYO_H
 
+#ifndef DIAL_PIN_REG
+#  define DIAL_PIN_REG PINB
+#endif
+
 // Read Mitutoyo dial indicator (tested with Mitutoyo 543-791B).
 //
 // Returns 'false' if no data arrives from the indicator.
@@ -33,7 +37,7 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
   uint16_t stable_clock_off_period = kInitialWaitTime;
   uint16_t clock_inactive_count = 0;
   while (stable_clock_off_period--) {
-    if (PINB & clk_bit) {
+    if (DIAL_PIN_REG & clk_bit) {
       clock_inactive_count++;
     } else {
       clock_inactive_count = 0;
@@ -55,15 +59,15 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
     clock_inactive_count = 0;
     uint8_t nibble = 0;
     for (uint8_t bit = 1; bit != 0x10; bit <<= 1) {
-      while ((PINB & clk_bit) == 0)  // Wait for clk to go high.
+      while ((DIAL_PIN_REG & clk_bit) == 0)  // Wait for clk to go high.
         ;
-      while (PINB & clk_bit) {       // Wait for negative edge
+      while (DIAL_PIN_REG & clk_bit) {       // Wait for negative edge
         clock_inactive_count++;
         if (clock_inactive_count > kOffDetectionCount) {
           return false;
         }
       }
-      if ((PINB & data_bit) != 0)
+      if ((DIAL_PIN_REG & data_bit) != 0)
         nibble |= bit;     // Bits come least significant first over the wire
     }
     nibbles[n] = nibble;

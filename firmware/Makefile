@@ -55,15 +55,26 @@
 DEFINES+=$(USER_DEFINES)
 
 # Notes: to change using another architecture, e.g. some more beefy Atmega
-# found in Arduinos
-#   - change the TARGET_ARCH (e.g. atmega328 for a Arduino Nano)
-#   - change the AVRDUDE_PART to the correct partnumber (e.g. m328p)
-#   - choose the I2C_IMPL to be one of i2c-master-usi.o  or i2c-master-twi.o
-#     (usi is used for attiny devices, twi for larger atmega devices)
+# found in Arduinos, or a newer tinyAVR 0-series like the ATtiny1604
+#   - change the TARGET_ARCH (e.g. atmega328 for a Arduino Nano, or attiny1604)
+#   - change the AVRDUDE_ARGS to the correct partnumber and programmer
+#   - choose the I2C_IMPL to be one of i2c-master-usi.o, i2c-master-twi.o, or
+#     i2c-master-twi0.o
+#     (usi is used for classic attiny devices, twi for classic atmega devices,
+#      twi0 for newer tinyAVR 0/1/2-series such as attiny1604)
 TARGET_ARCH=-mmcu=attiny85
 AVRDUDE_ARGS=-p t85 -c stk500v2
+FUSE_ARG=-U lfuse:w:0xe2:m
 I2C_IMPL=i2c-master-usi.o
 CPU_SPEED=8000000UL
+
+# For ATtiny1604 (I2C on PB1=SDA, PB0=SCL; indicator CLK/DATA on PA3/PA4;
+# button on PA1)
+#TARGET_ARCH=-mmcu=attiny1604
+#AVRDUDE_ARGS=-p t1604 -c serialupdi
+#FUSE_ARG=-U osccfg:w:0x01:m
+#I2C_IMPL=i2c-master-twi0.o
+#CPU_SPEED=8000000UL
 
 # e.g. for Nano, this would be something like this
 #TARGET_ARCH=-mmcu=atmega328
@@ -80,7 +91,9 @@ CXXFLAGS=$(CFLAGS) -std=c++11
 AVRDUDE_DEVICE ?= /dev/ttyUSB0
 AVRDUDE     = avrdude $(AVRDUDE_ARGS) -P $(AVRDUDE_DEVICE)
 FLASH_CMD   = $(AVRDUDE) -e -U flash:w:main.hex
-LINK=avr-g++ -g $(TARGET_ARCH) -Wl,-gc-sections,-relax
+MULTILIB_DIR=$(shell $(CC) $(TARGET_ARCH) -print-multi-directory)
+AVR_LIB_DIR=$(dir $(shell $(CC) -print-file-name=crtattiny85.o))../$(MULTILIB_DIR)
+LINK=avr-g++ -g $(TARGET_ARCH) -B$(AVR_LIB_DIR) -Wl,-gc-sections,-relax
 
 OBJECTS=main.o sh1106-display.o  strfmt.o \
 	bdfont-support.o font-bignumber.o font-smalltext.o font-tinytext.o \
@@ -96,15 +109,17 @@ disasm: main.elf
 	avr-objdump -C -S main.elf
 
 main.hex: main.elf
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+	avr-objcopy -j .text -j .rodata -j .data -O ihex main.elf main.hex
 
 main.cc : font-bignumber.c font-smalltext.c font-tinytext.c
 
-main.o: spherometer-calculation.h error-float.h dial-data.h
+main.o: spherometer-calculation.h error-float.h dial-data.h \
+	dial-indicator-autoutlet.h dial-indicator-mitutoyo.h compiler-flags
 host-testing: spherometer-calculation.h error-float.h dial-data.h
 
-i2c-master-usi.o: i2c-master.h
-i2c-master-twi.o: i2c-master.h
+i2c-master-usi.o: i2c-master.h compiler-flags
+i2c-master-twi.o: i2c-master.h compiler-flags
+i2c-master-twi0.o: i2c-master.h compiler-flags
 
 # Little utility to print values on the host.
 host-testing: host-testing.cc compiler-flags
@@ -120,20 +135,23 @@ flash: main.hex
 	$(FLASH_CMD)
 
 clean:
-	rm -f $(OBJECTS) main.elf main.hex host-testing
+	rm -f $(OBJECTS) i2c-master-*.o main.elf main.hex host-testing
 
-# Set to 8Mhz RC on Attiny85
+# Set to 8Mhz RC on Attiny85 (or 16MHz base oscillator on ATtiny1604)
 fuse:
-	$(AVRDUDE) -U lfuse:w:0xe2:m
+	$(AVRDUDE) $(FUSE_ARG)
 
 # Make sure to recompile everything if cflags change.
 compiler-flags: FORCE
-	@echo '$(CXX) $(CXXFLAGS)' | cmp -s - $@ || echo '$(CXX) $(CXXFLAGS)' > $@
+	@echo '$(CXX) $(TARGET_ARCH) $(CXXFLAGS)' | cmp -s - $@ || echo '$(CXX) $(TARGET_ARCH) $(CXXFLAGS)' > $@
 
 %.o : %.c %.h compiler-flags
 	$(CC) $(TARGET_ARCH) $(CFLAGS) -c -o $@ $<
 
 %.o : %.cc %.h compiler-flags
+	$(CXX) $(TARGET_ARCH) $(CXXFLAGS) -c -o $@ $<
+
+%.o : %.cc compiler-flags
 	$(CXX) $(TARGET_ARCH) $(CXXFLAGS) -c -o $@ $<
 
 .PHONY: FORCE

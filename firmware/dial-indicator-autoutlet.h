@@ -23,6 +23,10 @@
 #  define INDICATOR_DECIMALS 3
 #endif
 
+#ifndef DIAL_PIN_REG
+#  define DIAL_PIN_REG PINB
+#endif
+
 // Read the dial indicator (my model: AUTOUTLET digital indicator with 1μm res).
 //
 // Returns 'false' if no data arrives from the indicator.
@@ -36,7 +40,7 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
   uint16_t stable_clock_off_period = kInitialWaitTime;
   uint16_t clock_inactive_count = 0;
   while (stable_clock_off_period--) {
-    if (PINB & clk_bit) {
+    if (DIAL_PIN_REG & clk_bit) {
       clock_inactive_count++;
       stable_clock_off_period = kInitialWaitTime;
     } else {
@@ -69,15 +73,15 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
   uint32_t current_bit = 1;
   clock_inactive_count = 0;
   for (uint8_t i = 0; i < 24; ++i) {
-    while ((PINB & clk_bit) == 0)  // Wait for clk to go high.
+    while ((DIAL_PIN_REG & clk_bit) == 0)  // Wait for clk to go high.
       ;
-    while (PINB & clk_bit) {       // Wait for negative edge
+    while (DIAL_PIN_REG & clk_bit) {       // Wait for negative edge
       clock_inactive_count++;
       if (clock_inactive_count > kOffDetectionCount) {
         return false;
       }
     }
-    if ((PINB & data_bit) == 0)
+    if ((DIAL_PIN_REG & data_bit) == 0)
       result.bits |= current_bit;
     current_bit <<= 1;
   }
