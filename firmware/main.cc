@@ -60,17 +60,21 @@ static constexpr struct {
   { "  ⌀16\"", 16*25.4 },
 };
 
-static constexpr uint8_t BUTTON_BIT = (1<<1);  // A button as UI input.
+static constexpr uint8_t BUTTON_PIN = 1;  // A button as UI input.
+static constexpr uint8_t BUTTON_BIT = (1 << BUTTON_PIN);
 
 // Pins the dial indicator is connected to.
-static constexpr uint8_t CLK_BIT  = (1<<3);
-static constexpr uint8_t DATA_BIT = (1<<4);
+static constexpr uint8_t CLK_PIN  = 3;
+static constexpr uint8_t DATA_PIN = 4;
+static constexpr uint8_t CLK_BIT  = (1 << CLK_PIN);
+static constexpr uint8_t DATA_BIT = (1 << DATA_PIN);
 
-#ifdef VPORTA
-// Modern tinyAVR (e.g. ATtiny1604): indicator & button on PORTA
+#ifdef VPORTA  // ATtiny1604: indicator & button on PORTA
 #  define DIAL_PIN_REG VPORTA.IN
-#else
-// Classic AVR (e.g. ATtiny85, ATmega328): indicator & button on PORTB
+static inline volatile uint8_t &PinACtrl(uint8_t pin) {
+  return (&PORTA.PIN0CTRL)[pin];
+}
+#else          // ATtiny85, ATmega328: indicator & button on PORTB
 #  define DIAL_PIN_REG PINB
 #endif
 
@@ -95,63 +99,47 @@ static inline bool ReadDialIndicator(uint8_t clk_bit, uint8_t data_bit,
 // Get microcontroller to deep sleep. We enable a level changing interrupt
 // to come back online. We are listening on the clock line of the dial
 // indicator for that. That way, we don't need any own power button.
-#if defined(PORTA_PORT_vect)
-ISR(PORTA_PORT_vect) {
-  PORTA.INTFLAGS = 0xff;
-}
-static void SleepTillDialIndicatorClocksAgain() {
-  cli();
-  PORTA.INTFLAGS = 0xff;
-  PORTA.PIN3CTRL = (PORTA.PIN3CTRL & ~PORT_ISC_gm) | PORT_ISC_BOTHEDGES_gc;
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
-  sleep_enable();
-  sei();
-  sleep_cpu();
-
-  // Zzzz...
-
-  // Waking up due to interrupt.
-  sleep_disable();
-  PORTA.PIN3CTRL &= ~PORT_ISC_gm;
-}
-#elif defined(PCICR)
+#if defined(PORTA_PORT_vect)  // ATtiny1604
+ISR(PORTA_PORT_vect) { PORTA.INTFLAGS = 0xff; }
+#else                         // ATtiny85, ATmega328
 EMPTY_INTERRUPT(PCINT0_vect);
-static void SleepTillDialIndicatorClocksAgain() {
-  cli();
-  PCICR |= (1<<PCIE0);  // level change interrupt
-  PCMSK0 = CLK_BIT;     // Switch on level detection on the CLK of indicator
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
-  sleep_enable();
-  sei();
-  sleep_cpu();
-
-  // Zzzz...
-
-  // Waking up due to interrupt.
-  sleep_disable();
-  PCICR = 0;
-}
-#else
-EMPTY_INTERRUPT(PCINT0_vect);
-static void SleepTillDialIndicatorClocksAgain() {
-  cli();
-  GIMSK |= (1<<PCIE);   // level change interrupt
-  PCMSK = CLK_BIT;      // Switch on level detection on the CLK of indicator
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
-  sleep_enable();
-  sei();
-  sleep_cpu();
-
-  // Zzzz...
-
-  // Waking up due to interrupt.
-  sleep_disable();
-  GIMSK = 0;
-}
 #endif
+
+static void SleepTillDialIndicatorClocksAgain() {
+  cli();
+
+  // Enable level change interrupt on the clk pin.
+#if defined(PORTA_PORT_vect)  // ATtiny1640
+  PORTA.INTFLAGS = 0xff;
+  PinACtrl(CLK_PIN) = (PinACtrl(CLK_PIN) & ~PORT_ISC_gm) | PORT_ISC_BOTHEDGES_gc;
+#elif defined(PCICR)          // ATmega328
+  PCICR |= (1<<PCIE0);        // level change interrupt
+  PCMSK0 = CLK_BIT;           // Switch on level detection on CLK of indicator
+#else                         // ATtiny85
+  GIMSK |= (1<<PCIE);         // level change interrupt
+  PCMSK = CLK_BIT;            // Switch on level detection on CLK of indicator
+#endif
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+
+  sleep_enable();
+  sei();
+  sleep_cpu();
+
+  // Zzzz...
+
+  // Waking up due to interrupt.
+  sleep_disable();
+
+  // Disable the interrupt condition.
+#if defined(PORTA_PORT_vect)  // ATtiny1604
+  PinACtrl(CLK_PIN) &= ~PORT_ISC_gm;
+#elif defined(PCICR)          // ATmega328
+  PCICR = 0;
+#else                         // ATtiny85
+  GIMSK = 0;
+#endif
+}
 
 // Keep track of button release before next clicked() event is triggered.
 class Button {
@@ -161,13 +149,13 @@ public:
   // While at sleep, we don't want button presses to use power. Also, this
   // is a nice way to measure from the outside if we are in sleep mode.
   void SleepMode(bool s) {
-#ifdef VPORTA
+#ifdef VPORTA  // ATtiny1604
     if (s) {
-      PORTA.PIN1CTRL &= ~PORT_PULLUPEN_bm;
+      PinACtrl(BUTTON_PIN) &= ~PORT_PULLUPEN_bm;
     } else {
-      PORTA.PIN1CTRL |= PORT_PULLUPEN_bm;
+      PinACtrl(BUTTON_PIN) |= PORT_PULLUPEN_bm;
     }
-#else
+#else          // ATtiny85, ATmega328
     if (s) {
       PORTB &= ~BUTTON_BIT;
     } else {
@@ -323,16 +311,18 @@ static void ShowRadiusPage(SH1106Display *disp, DialData dial,
 static inline bool is_flat(int32_t value) { return value < 2; }
 
 int main() {
-#ifdef CLKCTRL
-  // 16MHz internal oscillator with /2 prescaler -> 8MHz
+#ifdef CLKCTRL  // ATtiny1604: 16MHz internal oscillator with /2 prescaler -> 8MHz
   _PROTECTED_WRITE(CLKCTRL.MCLKCTRLB, CLKCTRL_PDIV_2X_gc | CLKCTRL_PEN_bm);
 #endif
-#ifdef VPORTA
-  PORTA.PIN3CTRL |= PORT_PULLUPEN_bm;  // Pullup for CLK_BIT
-  PORTA.PIN4CTRL |= PORT_PULLUPEN_bm;  // Pullup for DATA_BIT
-#else
-  PORTB = CLK_BIT | DATA_BIT;  // Pullup for the transistor level converter.
+
+  // Pullup for the transistor open collector level converter.
+#ifdef VPORTA   // ATtiny1604
+  PinACtrl(CLK_PIN)  |= PORT_PULLUPEN_bm;
+  PinACtrl(DATA_PIN) |= PORT_PULLUPEN_bm;
+#else           // ATtiny85, ATmega328
+  PORTB = CLK_BIT | DATA_BIT;
 #endif
+
   _delay_ms(500);  // Let display warm up and get ready before the first i2c
   SH1106Display disp;
   Button button;
