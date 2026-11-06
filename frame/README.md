@@ -42,3 +42,7 @@ All screws are M3.
 
 ![](../img/dial-case.png)
 ![](../img/base-plate.png)
+
+Another style, originally used for a Mitutoyo-dial
+
+![](../img/dial-case-mitutoyo.png)
