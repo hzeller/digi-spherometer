@@ -933,7 +933,7 @@ module mit_front_block_part() {
   }
 }
 
-if (true) {
+if (true) render() {
   //translate([0, 15, 0]) mit_battery_cover();
   color("yellow") mit_back_part();
   translate([0, -mit_front+mit_front_adjust, 0])  color("yellow") render() display_case_button();

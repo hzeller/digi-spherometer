@@ -21,5 +21,6 @@ pkgs.mkShell {
       # case
       openscad-unstable
       prusa-slicer
+      netpbm  # image render
     ];
 }
