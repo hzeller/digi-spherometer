@@ -22,6 +22,8 @@ OPENSCAD=openscad -q --backend Manifold  -D'$$fs=0.15' -D'$$fa=1'
 
 all: $(TARGETS) $(TARGETS_MITUOYO)
 
+images: frame.png frame-mitutoyo.png
+
 %.stl: %.scad
 	$(OPENSCAD) -D'version_id="$(GIT_HASH)"' \
                     -D'version_date="$(GIT_DATE)"' \
