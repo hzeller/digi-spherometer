@@ -1,6 +1,8 @@
 Case for the Spherometer
 ========================
 
+Suggestions for cases; there are two kinds that can serve as an inspiration.
+
 These are generated with OpenSCAD.
 
 To generate, OpenSCAD needs to be installed, then just run
