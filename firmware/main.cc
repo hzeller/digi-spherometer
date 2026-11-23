@@ -53,11 +53,13 @@ static constexpr struct {
   const char *text;
   const float mm;
 } aperture_items[kApertureChoices] = {
-  { "   ⌀6\"",  6*25.4 },
-  { "   ⌀8\"",  8*25.4 },
-  { "  ⌀10\"", 10*25.4 },
-  { "  ⌀12\"", 12*25.4 },
-  { "  ⌀16\"", 16*25.4 },
+    {"⌀115mm", 115.0},
+    {"⌀155mm", 155.0},
+    {"⌀205mm", 205.0},
+    {"⌀255mm", 255.0},
+    //{" ⌀270mm", 270.0 },
+    {"⌀300mm", 300.0},
+    //{" ⌀400mm", 300.0 },
 };
 
 static constexpr uint8_t BUTTON_PIN = 1;  // A button as UI input.
@@ -175,6 +177,10 @@ private:
 };
 
 #ifdef SCREENSAVER_SAMPLE_COUNT
+#if defined(SCREENSAVER_SHOW_MSG) &&                                           \
+    SCREENSAVER_SHOW_MSG >= SCREENSAVER_SAMPLE_COUNT
+char SCREENSAVER_SHOW_MSG_must_be_greater_than_SCREENSAVER_SAMPLE_COUNT[-1];
+#endif
 class Screensaver {
 public:
   bool CheckIsActive(bool measurement_is_same, SH1106Display *disp) {
@@ -188,7 +194,21 @@ public:
     if (measurement_is_same) {
       if (wait_cycles_ < SCREENSAVER_SAMPLE_COUNT) {
         wait_cycles_++;
-      } else {
+      }
+#ifdef SCREENSAVER_SHOW_MSG
+      if (wait_cycles_ == SCREENSAVER_SHOW_MSG) {
+        disp->ClearScreen();
+        disp->Print(font_smalltext, 19,  0, "switch off");
+        disp->Print(font_smalltext, 23, 16, "when done");
+      }
+
+      if (wait_cycles_ >= SCREENSAVER_SHOW_MSG &&
+          wait_cycles_ < SCREENSAVER_SAMPLE_COUNT) {
+        return true;
+      }
+      else
+#endif
+      if (wait_cycles_ >= SCREENSAVER_SAMPLE_COUNT) {
         disp->SetOn(false);
         return true;
       }
@@ -202,7 +222,7 @@ public:
   }
 
 private:
-  int16_t wait_cycles_ = 0;
+  uint16_t wait_cycles_ = 0;
 };
 #else
 class Screensaver {

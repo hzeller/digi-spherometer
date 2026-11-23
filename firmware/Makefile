@@ -51,6 +51,11 @@
 # exactly the same. Valid range: 0..65535
 #DEFINES+=-DSCREENSAVER_SAMPLE_COUNT=1000
 
+# If we have a screensaver defined (defined(SCREENSAVER_SAMPLE_COUNT)), then
+# if this is also defined, the screensaver shows a message before going
+# entirely dark. If defined, the value needs to be smaller than the SAMPLE_COUNT
+#DEFINES+=-DSCREENSAVER_SHOW_MSG=600
+
 # Defines can also be given on the command-line
 DEFINES+=$(USER_DEFINES)
 
